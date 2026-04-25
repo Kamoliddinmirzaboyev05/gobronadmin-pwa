@@ -1,7 +1,8 @@
 import type { BookingStatus } from '../types';
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('uz-UZ').format(amount) + " so'm";
+export function formatCurrency(amount: number | string): string {
+  const num = typeof amount === 'string' ? parseFloat(amount) || 0 : amount;
+  return new Intl.NumberFormat('uz-UZ').format(num) + " so'm";
 }
 
 export function formatDate(dateStr: string): string {
