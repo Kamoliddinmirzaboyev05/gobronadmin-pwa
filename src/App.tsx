@@ -5,6 +5,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { PushProvider } from './context/PushContext';
 import Layout from './components/layout/Layout';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import Fields from './pages/Fields';
@@ -23,6 +24,10 @@ function AppRoutes() {
       <Route
         path="/login"
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
+      />
+      <Route
+        path="/register"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
       />
       <Route
         path="/"

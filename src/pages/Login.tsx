@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -87,7 +87,18 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="text-center text-slate-600 text-xs mt-8">© 2025 GoBron</p>
+        <div className="text-center mt-8 space-y-3">
+          <p className="text-slate-400 text-sm">
+            Hisobingiz yo'qmi?{' '}
+            <Link
+              to="/register"
+              className="text-emerald-400 font-medium hover:text-emerald-300 transition-colors"
+            >
+              Ro'yxatdan o'tish
+            </Link>
+          </p>
+          <p className="text-slate-600 text-xs">© 2025 GoBron</p>
+        </div>
       </div>
     </div>
   );

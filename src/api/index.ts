@@ -45,7 +45,7 @@ function paginate<T>(items: T[], page = 1, pageSize = 20): PaginatedResponse<T> 
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
+// ─── Token refresh helper ─────────────────────────────────────────────────────
 export const authApi = {
   login: async (username: string, password: string) => {
     const res = await fetch(`${API_BASE_URL}/auth/login/`, {
@@ -75,6 +75,61 @@ export const authApi = {
     localStorage.setItem('admin_token', data.access);
     if (data.refresh) localStorage.setItem('admin_refresh', data.refresh);
     return { access: data.access, refresh: data.refresh, admin };
+  },
+
+  register: async (payload: import('../types').RegisterRequest) => {
+    const res = await fetch(`${API_BASE_URL}/auth/register/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const message = errData.detail || errData.message || Object.values(errData).flat().join(', ') || 'Ro\'yxatdan o\'tishda xatolik';
+      throw new Error(message);
+    }
+
+    const data = await res.json();
+    const user = data.user;
+
+    const admin: AdminProfile = {
+      ...user,
+      name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+      email: user.email || user.username,
+      avatar: user.avatar_url || undefined,
+    };
+
+    localStorage.setItem('admin_token', data.access);
+    if (data.refresh) localStorage.setItem('admin_refresh', data.refresh);
+    return { access: data.access, refresh: data.refresh, admin };
+  },
+
+  refreshToken: async (): Promise<string> => {
+    const refresh = localStorage.getItem('admin_refresh');
+    if (!refresh) throw new Error('Refresh token mavjud emas');
+
+    const res = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ refresh }),
+    });
+
+    if (!res.ok) {
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_refresh');
+      throw new Error('Sessiya tugadi');
+    }
+
+    const data = await res.json();
+    localStorage.setItem('admin_token', data.access);
+    return data.access;
   },
 
   logout: async () => {
