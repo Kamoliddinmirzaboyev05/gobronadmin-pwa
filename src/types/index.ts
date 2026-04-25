@@ -12,14 +12,20 @@ export interface Field {
   description: string;
   address: string;
   city: string;
-  price_per_hour: number;
+  price_per_hour: number | string;
   opening_time: string;
   closing_time: string;
   is_active: boolean;
   cover_image?: string;
+  cover_image_url?: string | null;
   images?: FieldImage[];
   amenities?: Amenity[];
   created_at: string;
+  updated_at?: string;
+  location_url?: string | null;
+  phone?: string;
+  advance_booking_days?: number;
+  subscription_valid?: boolean;
 }
 
 export interface FieldImage {

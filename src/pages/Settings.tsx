@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings2, Image, Star, MapPin, Bell } from 'lucide-react';
+import { Settings2, Image, Star, MapPin, Bell, Plus, Trash2 } from 'lucide-react';
 import { fieldsApi } from '../api';
 import type { Field } from '../types';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
@@ -22,6 +22,8 @@ export default function Settings() {
   const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasUnsaved, setHasUnsaved] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const { showToast } = useToast();
 
   const load = useCallback(async () => {
@@ -31,6 +33,10 @@ export default function Settings() {
       const list = Array.isArray(data) ? data : [];
       setFields(list);
       if (list.length > 0 && !selectedFieldId) setSelectedFieldId(list[0].id);
+      if (list.length > 0 && selectedFieldId && !list.find((f) => f.id === selectedFieldId)) {
+        setSelectedFieldId(list[0].id);
+      }
+      if (list.length === 0) setSelectedFieldId(null);
     } catch {
       showToast('Xatolik yuz berdi', 'error');
     } finally {
@@ -56,14 +62,53 @@ export default function Settings() {
     setActiveTab(tab);
   };
 
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      const newField = await fieldsApi.create({ name: 'Yangi maydon' });
+      showToast('Yangi maydon yaratildi!', 'success');
+      setFields((prev) => [...prev, newField]);
+      setSelectedFieldId(newField.id);
+      setActiveTab('field');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Yaratishda xatolik', 'error');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Bu maydonni o\'chirishni xohlaysizmi?')) return;
+    setDeletingId(id);
+    try {
+      await fieldsApi.delete(id);
+      showToast('Maydon o\'chirildi', 'success');
+      await load();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'O\'chirishda xatolik', 'error');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const selectedField = fields.find((f) => f.id === selectedFieldId) || null;
 
   return (
     <div className="pb-4">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4">
-        <h1 className="text-xl font-bold text-gray-800">Sozlamalar</h1>
-        <p className="text-xs text-gray-400">Maydon sozlamalari</p>
+      <div className="px-4 pt-12 pb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-800">Sozlamalar</h1>
+          <p className="text-xs text-gray-400">Maydon sozlamalari</p>
+        </div>
+        <button
+          onClick={handleCreate}
+          disabled={creating}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 text-white text-xs font-semibold active:bg-emerald-600 disabled:opacity-60 transition-colors shadow-sm"
+        >
+          {creating ? <LoadingSpinner size={14} /> : <Plus size={14} />}
+          Yangi
+        </button>
       </div>
 
       {/* Field selector */}
@@ -76,21 +121,39 @@ export default function Settings() {
           {loading ? (
             <LoadingSpinner size={20} className="text-emerald-500" />
           ) : fields.length === 0 ? (
-            <p className="text-sm text-gray-400">Maydonlar mavjud emas</p>
+            <div className="flex flex-col items-center gap-2 py-4">
+              <p className="text-sm text-gray-400">Maydonlar mavjud emas</p>
+              <button
+                onClick={handleCreate}
+                disabled={creating}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 text-white text-xs font-semibold active:bg-emerald-600 disabled:opacity-60"
+              >
+                {creating ? <LoadingSpinner size={14} /> : <Plus size={14} />}
+                Maydon yaratish
+              </button>
+            </div>
           ) : (
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar items-center">
               {fields.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setSelectedFieldId(f.id)}
-                  className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                    selectedFieldId === f.id
-                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {f.name}
-                </button>
+                <div key={f.id} className="relative group shrink-0">
+                  <button
+                    onClick={() => setSelectedFieldId(f.id)}
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      selectedFieldId === f.id
+                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {f.name}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(f.id); }}
+                    disabled={deletingId === f.id}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                  >
+                    {deletingId === f.id ? <LoadingSpinner size={10} /> : <Trash2 size={10} />}
+                  </button>
+                </div>
               ))}
             </div>
           )}

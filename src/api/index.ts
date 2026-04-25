@@ -21,13 +21,9 @@ import {
 } from './mockData';
 
 // ─── In-memory store ──────────────────────────────────────────────────────────
-let fields: Field[] = JSON.parse(JSON.stringify(_mockFields));
 let bookings: Booking[] = JSON.parse(JSON.stringify(_mockBookings));
 let notifications: Notification[] = JSON.parse(JSON.stringify(_mockNotifications));
 let adminProfile: AdminProfile = { ...mockAdmin };
-let nextFieldId = 100;
-let nextAmenityId = 500;
-let nextImageId = 600;
 let nextNotifId = 50;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -44,6 +40,33 @@ function paginate<T>(items: T[], page = 1, pageSize = 20): PaginatedResponse<T> 
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+
+function getToken() {
+  return localStorage.getItem('admin_token');
+}
+
+function authHeader(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      Accept: 'application/json',
+      ...authHeader(),
+      ...(options?.headers || {}),
+    },
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || errData.message || `Xatolik: ${res.status}`);
+  }
+
+  return res.json() as Promise<T>;
+}
 
 // ─── Token refresh helper ─────────────────────────────────────────────────────
 export const authApi = {
@@ -265,105 +288,133 @@ export const bookingsApi = {
 };
 
 // ─── Fields ───────────────────────────────────────────────────────────────────
+function normalizeField(raw: any): Field {
+  return {
+    id: raw.id,
+    name: raw.name || '',
+    description: raw.description || '',
+    address: raw.address || '',
+    city: raw.city || '',
+    price_per_hour: raw.price_per_hour ?? 0,
+    opening_time: (raw.opening_time || '08:00').slice(0, 5),
+    closing_time: (raw.closing_time || '22:00').slice(0, 5),
+    is_active: raw.is_active ?? true,
+    cover_image: raw.cover_image_url || raw.cover_image || undefined,
+    cover_image_url: raw.cover_image_url || null,
+    images: raw.images || [],
+    amenities: raw.amenities || [],
+    created_at: raw.created_at,
+    updated_at: raw.updated_at,
+    location_url: raw.location_url || null,
+    phone: raw.phone || '',
+    advance_booking_days: raw.advance_booking_days,
+    subscription_valid: raw.subscription_valid,
+  };
+}
+
 export const fieldsApi = {
   getAll: async (): Promise<Field[]> => {
-    await delay(300);
-    return fields.map((f) => ({ ...f }));
+    const data = await apiFetch<PaginatedResponse<any>>(`${API_BASE_URL}/admin/fields/`);
+    return (data.results || []).map(normalizeField);
   },
 
   getById: async (id: number): Promise<Field> => {
-    await delay(200);
-    const f = fields.find((f) => f.id === id);
-    if (!f) throw new Error('Maydon topilmadi');
-    return { ...f };
+    const data = await apiFetch<any>(`${API_BASE_URL}/admin/fields/${id}/`);
+    return normalizeField(data);
   },
 
   create: async (data: Partial<Field>): Promise<Field> => {
-    await delay(400);
-    const newField: Field = {
-      id: nextFieldId++,
-      name: data.name || 'Yangi maydon',
+    const payload = {
+      name: data.name,
       description: data.description || '',
       address: data.address || '',
       city: data.city || 'Toshkent',
-      price_per_hour: data.price_per_hour || 0,
-      opening_time: data.opening_time || '08:00',
-      closing_time: data.closing_time || '22:00',
+      price_per_hour: Number(data.price_per_hour) || 0,
+      opening_time: data.opening_time ? `${data.opening_time}:00` : '08:00:00',
+      closing_time: data.closing_time ? `${data.closing_time}:00` : '22:00:00',
       is_active: data.is_active ?? true,
-      images: [],
-      amenities: [],
-      created_at: new Date().toISOString(),
     };
-    fields.push(newField);
-    return { ...newField };
+    const res = await apiFetch<any>(`${API_BASE_URL}/admin/fields/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return normalizeField(res);
   },
 
   update: async (id: number, data: Partial<Field>): Promise<Field> => {
-    await delay(350);
-    const idx = fields.findIndex((f) => f.id === id);
-    if (idx === -1) throw new Error('Maydon topilmadi');
-    fields[idx] = { ...fields[idx], ...data };
-    return { ...fields[idx] };
+    const payload: Record<string, any> = {};
+    if (data.name !== undefined) payload.name = data.name;
+    if (data.description !== undefined) payload.description = data.description;
+    if (data.address !== undefined) payload.address = data.address;
+    if (data.city !== undefined) payload.city = data.city;
+    if (data.price_per_hour !== undefined) payload.price_per_hour = Number(data.price_per_hour);
+    if (data.opening_time !== undefined) payload.opening_time = `${data.opening_time}:00`;
+    if (data.closing_time !== undefined) payload.closing_time = `${data.closing_time}:00`;
+    if (data.is_active !== undefined) payload.is_active = data.is_active;
+
+    const res = await apiFetch<any>(`${API_BASE_URL}/admin/fields/${id}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return normalizeField(res);
   },
 
   toggleActive: async (id: number): Promise<Field> => {
-    await delay(250);
-    const idx = fields.findIndex((f) => f.id === id);
-    if (idx === -1) throw new Error('Maydon topilmadi');
-    fields[idx] = { ...fields[idx], is_active: !fields[idx].is_active };
-    return { ...fields[idx] };
+    const current = await fieldsApi.getById(id);
+    return fieldsApi.update(id, { is_active: !current.is_active });
   },
 
   delete: async (id: number): Promise<void> => {
-    await delay(300);
-    fields = fields.filter((f) => f.id !== id);
+    await apiFetch<any>(`${API_BASE_URL}/admin/fields/${id}/`, {
+      method: 'DELETE',
+    });
   },
 
   // Images
   uploadImage: async (fieldId: number, formData: FormData): Promise<{ id: number; image: string; order: number }> => {
-    await delay(600);
-    const file = formData.get('image') as File;
-    const url = file ? URL.createObjectURL(file) : 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=600&q=80';
-    const idx = fields.findIndex((f) => f.id === fieldId);
-    if (idx === -1) throw new Error('Maydon topilmadi');
-    const newImg = { id: nextImageId++, image: url, order: (fields[idx].images?.length || 0) + 1 };
-    fields[idx].images = [...(fields[idx].images || []), newImg];
-    return newImg;
+    const res = await fetch(`${API_BASE_URL}/admin/fields/${fieldId}/images/`, {
+      method: 'POST',
+      headers: authHeader(),
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Rasm yuklashda xatolik');
+    }
+    const data = await res.json();
+    return { id: data.id, image: data.image || data.image_url || data.url, order: data.order || 1 };
   },
 
   deleteImage: async (fieldId: number, imageId: number): Promise<void> => {
-    await delay(250);
-    const idx = fields.findIndex((f) => f.id === fieldId);
-    if (idx === -1) throw new Error('Maydon topilmadi');
-    fields[idx].images = (fields[idx].images || []).filter((img) => img.id !== imageId);
+    await apiFetch<any>(`${API_BASE_URL}/admin/fields/${fieldId}/images/${imageId}/`, {
+      method: 'DELETE',
+    });
   },
 
   reorderImages: async (fieldId: number, order: number[]): Promise<void> => {
-    await delay(200);
-    const idx = fields.findIndex((f) => f.id === fieldId);
-    if (idx === -1) return;
-    const imgs = fields[idx].images || [];
-    fields[idx].images = order.map((id, i) => {
-      const img = imgs.find((img) => img.id === id);
-      return img ? { ...img, order: i + 1 } : img!;
-    }).filter(Boolean);
+    await apiFetch<any>(`${API_BASE_URL}/admin/fields/${fieldId}/images/reorder/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order }),
+    });
   },
 
   // Amenities
   addAmenity: async (fieldId: number, data: Partial<Amenity>): Promise<Amenity> => {
-    await delay(300);
-    const idx = fields.findIndex((f) => f.id === fieldId);
-    if (idx === -1) throw new Error('Maydon topilmadi');
-    const newAmenity: Amenity = { id: nextAmenityId++, icon: data.icon || '⚽', name: data.name || '' };
-    fields[idx].amenities = [...(fields[idx].amenities || []), newAmenity];
-    return newAmenity;
+    const res = await apiFetch<any>(`${API_BASE_URL}/admin/fields/${fieldId}/amenities/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return { id: res.id, icon: res.icon || '⚽', name: res.name || '' };
   },
 
   deleteAmenity: async (fieldId: number, amenityId: number): Promise<void> => {
-    await delay(250);
-    const idx = fields.findIndex((f) => f.id === fieldId);
-    if (idx === -1) throw new Error('Maydon topilmadi');
-    fields[idx].amenities = (fields[idx].amenities || []).filter((a) => a.id !== amenityId);
+    await apiFetch<any>(`${API_BASE_URL}/admin/fields/${fieldId}/amenities/${amenityId}/`, {
+      method: 'DELETE',
+    });
   },
 };
 
@@ -396,22 +447,51 @@ export const notificationsApi = {
 };
 
 // ─── Settings / Profile ───────────────────────────────────────────────────────
+function normalizeProfile(raw: any): AdminProfile {
+  return {
+    id: raw.id,
+    username: raw.username || '',
+    first_name: raw.first_name || '',
+    last_name: raw.last_name || '',
+    phone: raw.phone || raw.phone_number || undefined,
+    role: raw.role || undefined,
+    avatar_url: raw.avatar_url || null,
+    date_joined: raw.date_joined,
+    name: `${raw.first_name || ''} ${raw.last_name || ''}`.trim() || raw.username || '',
+    email: raw.email || raw.username || '',
+    avatar: raw.avatar_url || undefined,
+    email_notifications: raw.email_notifications ?? true,
+  };
+}
+
 export const settingsApi = {
   getProfile: async (): Promise<AdminProfile> => {
-    await delay(200);
-    return { ...adminProfile };
+    const data = await apiFetch<any>(`${API_BASE_URL}/auth/me/`);
+    return normalizeProfile(data);
   },
 
   updateProfile: async (data: Partial<AdminProfile>): Promise<AdminProfile> => {
-    await delay(350);
-    adminProfile = { ...adminProfile, ...data };
-    return { ...adminProfile };
+    const payload: Record<string, any> = {};
+    if (data.first_name !== undefined) payload.first_name = data.first_name;
+    if (data.last_name !== undefined) payload.last_name = data.last_name;
+    if (data.phone !== undefined) payload.phone = data.phone;
+    if (data.email !== undefined) payload.email = data.email;
+    if (data.email_notifications !== undefined) payload.email_notifications = data.email_notifications;
+
+    const res = await apiFetch<any>(`${API_BASE_URL}/auth/me/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return normalizeProfile(res);
   },
 
-  changePassword: async (old_password: string, _new_password: string): Promise<void> => {
-    await delay(400);
-    if (!old_password) throw new Error('Joriy parolni kiriting');
-    // Mock: accept any old password
+  changePassword: async (old_password: string, new_password: string): Promise<void> => {
+    await apiFetch<any>(`${API_BASE_URL}/auth/password/change/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ old_password, new_password }),
+    });
   },
 };
 
