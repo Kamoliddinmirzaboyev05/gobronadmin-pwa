@@ -2,6 +2,9 @@ import type { Field, Booking, Notification, AdminProfile, DashboardStats } from 
 
 export const mockAdmin: AdminProfile = {
   id: 1,
+  username: 'admin',
+  first_name: 'Jasur',
+  last_name: 'Toshmatov',
   name: 'Jasur Toshmatov',
   email: 'admin@gobron.uz',
   email_notifications: true,

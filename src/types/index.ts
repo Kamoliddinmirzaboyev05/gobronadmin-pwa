@@ -88,10 +88,19 @@ export interface Notification {
 
 export interface AdminProfile {
   id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  role?: string;
+  avatar_url?: string | null;
+  date_joined?: string;
+  /** UI compatibility — computed from first_name + last_name */
   name: string;
+  /** UI compatibility — falls back to username if email missing */
   email: string;
   avatar?: string;
-  email_notifications: boolean;
+  email_notifications?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -148,4 +157,29 @@ export interface ToastMessage {
   id: string;
   message: string;
   type: 'success' | 'error' | 'warning' | 'info';
+}
+
+export interface RegisterRequest {
+  username: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  role: string;
+  password: string;
+  password2: string;
+}
+
+export interface RegisterResponse {
+  user: {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+    phone: string;
+    role: string;
+    avatar_url: string | null;
+    date_joined: string;
+  };
+  refresh: string;
+  access: string;
 }

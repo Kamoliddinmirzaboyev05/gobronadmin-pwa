@@ -26,7 +26,6 @@ let bookings: Booking[] = JSON.parse(JSON.stringify(_mockBookings));
 let notifications: Notification[] = JSON.parse(JSON.stringify(_mockNotifications));
 let adminProfile: AdminProfile = { ...mockAdmin };
 let nextFieldId = 100;
-let nextBookingId = 200;
 let nextAmenityId = 500;
 let nextImageId = 600;
 let nextNotifId = 50;
@@ -44,17 +43,53 @@ function paginate<T>(items: T[], page = 1, pageSize = 20): PaginatedResponse<T> 
   };
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 export const authApi = {
-  login: async (email: string, password: string) => {
-    await delay(500);
-    // Accept any credentials for mock — or restrict to specific ones
-    if (!email || !password) throw new Error('Email va parolni kiriting');
-    localStorage.setItem('admin_token', 'mock_token_123');
-    return { access: 'mock_token_123', refresh: 'mock_refresh_123', admin: adminProfile };
+  login: async (username: string, password: string) => {
+    const res = await fetch(`${API_BASE_URL}/auth/login/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || errData.message || 'Login xatosi');
+    }
+
+    const data = await res.json();
+    const user = data.user;
+
+    const admin: AdminProfile = {
+      ...user,
+      name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+      email: user.email || user.username,
+      avatar: user.avatar_url || undefined,
+    };
+
+    localStorage.setItem('admin_token', data.access);
+    if (data.refresh) localStorage.setItem('admin_refresh', data.refresh);
+    return { access: data.access, refresh: data.refresh, admin };
   },
+
   logout: async () => {
-    await delay(200);
+    const refresh = localStorage.getItem('admin_refresh');
+    const token = localStorage.getItem('admin_token');
+    if (refresh && token) {
+      await fetch(`${API_BASE_URL}/auth/logout/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ refresh }),
+      }).catch(() => {});
+    }
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_refresh');
   },
@@ -330,23 +365,24 @@ export const pushApi = {
   subscribe: async (data: PushSubscriptionRequest): Promise<PushSubscriptionResponse> => {
     await delay(300);
     // Mock: return dummy subscription data
+    const sub = data.subscription as any;
     return {
       id: Math.floor(Math.random() * 10000),
       endpoint: data.subscription.endpoint,
       keys: {
-        p256dh: data.subscription.keys?.p256dh || '',
-        auth: data.subscription.keys?.auth || '',
+        p256dh: sub.keys?.p256dh || '',
+        auth: sub.keys?.auth || '',
       },
       createdAt: new Date().toISOString(),
     };
   },
 
-  unsubscribe: async (endpoint: string): Promise<void> => {
+  unsubscribe: async (_endpoint: string): Promise<void> => {
     await delay(200);
     // Mock: no-op
   },
 
-  sendTestNotification: async (payload: PushTestRequest): Promise<PushTestResponse> => {
+  sendTestNotification: async (_payload: PushTestRequest): Promise<PushTestResponse> => {
     await delay(300);
     return { success: true, message: 'Test bildirishnoma yuborildi' };
   },

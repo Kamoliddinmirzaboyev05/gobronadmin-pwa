@@ -6,8 +6,8 @@ import { useToast } from '../context/ToastContext';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 
 export default function Login() {
-  const [email, setEmail] = useState('admin@gobron.uz');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('mirzaboyev');
+  const [password, setPassword] = useState('kamoliddin');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated } = useAuth();
@@ -20,10 +20,10 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) { showToast('Email va parolni kiriting', 'warning'); return; }
+    if (!username || !password) { showToast('Foydalanuvchi nomi va parolni kiriting', 'warning'); return; }
     setLoading(true);
     try {
-      await login(email, password);
+      await login(username, password);
       navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Xatolik yuz berdi', 'error');
@@ -47,14 +47,14 @@ export default function Login() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Foydalanuvchi nomi</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@gobron.uz"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="mirzaboyev"
               className="w-full px-4 py-3.5 rounded-2xl bg-white/10 border border-white/10 text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-              autoComplete="email"
+              autoComplete="username"
             />
           </div>
           <div>

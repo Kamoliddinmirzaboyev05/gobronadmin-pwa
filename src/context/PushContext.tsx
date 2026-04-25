@@ -9,7 +9,7 @@ import {
   removePushSubscription,
   subscribeToPushBackend,
   unsubscribeFromPushBackend,
-  showNotification,
+  showNotification as displayNotification,
 } from '../lib/pushClient';
 
 // ─── Types ────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ export function PushProvider({ children }: { children: React.ReactNode }) {
    */
   const showNotification = useCallback(async (payload: PushPayload): Promise<void> => {
     try {
-      await showNotification(payload);
+      await displayNotification(payload);
     } catch (err) {
       console.error('[PushContext] Notification ko\'rsatish xatoligi:', err);
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { usePush } from '../../context/PushContext';
 import { Button } from './Button';
 
@@ -13,16 +13,11 @@ interface Props {
 // ─── Main Component ───────────────────────────────────────────
 
 export function PushPermissionButton({ variant = 'primary', size = 'md', className = '' }: Props) {
-  const { isSupported, isSubscribed, isLoading, permission, subscribe, unsubscribe, error } = usePush();
-  const [showError, setShowError] = useState(false);
+  const { isSupported, isSubscribed, isLoading, permission, subscribe, unsubscribe } = usePush();
 
   useEffect(() => {
-    if (error) {
-      setShowError(true);
-      const timer = setTimeout(() => setShowError(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
+    // xatolikni avtomatik yashirish
+  }, []);
 
   if (!isSupported) {
     return (
@@ -37,11 +32,7 @@ export function PushPermissionButton({ variant = 'primary', size = 'md', classNa
     if (isSubscribed) {
       await unsubscribe();
     } else {
-      const success = await subscribe();
-      if (!success) {
-        setShowError(true);
-        setTimeout(() => setShowError(false), 5000);
-      }
+      await subscribe();
     }
   };
 

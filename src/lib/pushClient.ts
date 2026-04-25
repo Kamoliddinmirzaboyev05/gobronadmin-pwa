@@ -36,7 +36,7 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0))) as Uint8Array;
 }
 
 // ─── Helper: Service Worker registration ──────────────────────
@@ -55,7 +55,7 @@ export async function createPushSubscription(): Promise<PushSubscription> {
 
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
   });
 
   return subscription;
@@ -155,7 +155,7 @@ export async function showNotification(payload: PushPayload): Promise<void> {
     requireInteraction: payload.requireInteraction,
     vibrate: payload.vibrate,
     actions: payload.actions,
-  });
+  } as any);
 }
 
 // ─── Helper: iOS moslik ───────────────────────────────────────
@@ -184,7 +184,7 @@ export async function getNotificationPermission(): Promise<NotificationPermissio
 }
 
 // ─── Helper: Permission so'rash ───────────────────────────────
-export async function requestNotificationPermission(): Promise<'granted' | 'denied'> {
+export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!('Notification' in window)) {
     return 'denied';
   }

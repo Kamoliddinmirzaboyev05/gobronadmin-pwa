@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, LogOut, CalendarDays, Wallet, CheckCircle, XCircle, BarChart3, MapPin, TrendingUp, ChevronRight } from 'lucide-react';
+import { Bell, LogOut, CalendarDays, Wallet, CheckCircle, XCircle, MapPin, TrendingUp, ChevronRight } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,

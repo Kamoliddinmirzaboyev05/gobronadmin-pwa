@@ -5,7 +5,7 @@ import { authApi, settingsApi } from '../api';
 interface AuthContextType {
   isAuthenticated: boolean;
   admin: AdminProfile | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   refreshAdmin: () => Promise<void>;
 }
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, refreshAdmin]);
 
-  const login = async (email: string, password: string) => {
-    const data = await authApi.login(email, password);
+  const login = async (username: string, password: string) => {
+    const data = await authApi.login(username, password);
     localStorage.setItem('admin_token', data.access);
     if (data.refresh) localStorage.setItem('admin_refresh', data.refresh);
     setAdmin(data.admin);
