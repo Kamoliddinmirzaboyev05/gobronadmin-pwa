@@ -18,7 +18,24 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div
+        className="app-shell justify-center items-center"
+        style={{ background: 'linear-gradient(160deg, #0f172a 0%, #1e293b 100%)' }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-xl shadow-emerald-500/30 animate-pulse">
+            <span className="text-3xl">⚽</span>
+          </div>
+          <p className="text-slate-400 text-sm">Yuklanmoqda...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Routes>
       <Route
