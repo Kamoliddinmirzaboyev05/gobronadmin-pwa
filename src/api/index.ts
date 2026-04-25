@@ -7,6 +7,10 @@ import type {
   AdminProfile,
   PaginatedResponse,
   Amenity,
+  PushSubscriptionRequest,
+  PushSubscriptionResponse,
+  PushTestRequest,
+  PushTestResponse,
 } from '../types';
 import {
   mockAdmin,
@@ -318,5 +322,37 @@ export const settingsApi = {
     await delay(400);
     if (!old_password) throw new Error('Joriy parolni kiriting');
     // Mock: accept any old password
+  },
+};
+
+// ─── Push Notifications ───────────────────────────────────────────────────────
+export const pushApi = {
+  subscribe: async (data: PushSubscriptionRequest): Promise<PushSubscriptionResponse> => {
+    await delay(300);
+    // Mock: return dummy subscription data
+    return {
+      id: Math.floor(Math.random() * 10000),
+      endpoint: data.subscription.endpoint,
+      keys: {
+        p256dh: data.subscription.keys?.p256dh || '',
+        auth: data.subscription.keys?.auth || '',
+      },
+      createdAt: new Date().toISOString(),
+    };
+  },
+
+  unsubscribe: async (endpoint: string): Promise<void> => {
+    await delay(200);
+    // Mock: no-op
+  },
+
+  sendTestNotification: async (payload: PushTestRequest): Promise<PushTestResponse> => {
+    await delay(300);
+    return { success: true, message: 'Test bildirishnoma yuborildi' };
+  },
+
+  getSubscriptions: async (): Promise<PushSubscriptionResponse[]> => {
+    await delay(200);
+    return [];
   },
 };

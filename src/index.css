@@ -143,3 +143,16 @@ textarea {
 /* Safe area */
 .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+/* Safe area */
+.safe-top { padding-top: env(safe-area-inset-top, 0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+
+/* Notification badge animation */
+@keyframes notificationBadge {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.notification-badge {
+  animation: notificationBadge 0.3s ease;
+}

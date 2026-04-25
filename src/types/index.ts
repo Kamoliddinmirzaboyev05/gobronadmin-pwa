@@ -111,6 +111,39 @@ export interface BookingFilters {
   ordering?: string;
 }
 
+export interface PushSubscriptionRequest {
+  subscription: PushSubscription;
+  userAgent?: string;
+  createdAt?: string;
+}
+
+export interface PushSubscriptionResponse {
+  id: number;
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  createdAt: string;
+}
+
+export interface PushTestRequest {
+  title: string;
+  body: string;
+  icon?: string;
+  badge?: string;
+  data?: {
+    url?: string;
+    [key: string]: any;
+  };
+  tag?: string;
+}
+
+export interface PushTestResponse {
+  success: boolean;
+  message?: string;
+}
+
 export interface ToastMessage {
   id: string;
   message: string;

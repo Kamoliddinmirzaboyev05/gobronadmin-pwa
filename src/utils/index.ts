@@ -117,3 +117,9 @@ export const AMENITY_SUGGESTIONS = [
   { icon: '🚰', name: 'Ichimlik suvi' },
   { icon: '📹', name: 'Videokuzatuv' },
 ];
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
