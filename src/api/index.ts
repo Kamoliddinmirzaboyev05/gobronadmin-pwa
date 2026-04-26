@@ -11,6 +11,8 @@ import type {
   PushSubscriptionResponse,
   PushTestRequest,
   PushTestResponse,
+  Slot,
+  ManualBookingRequest,
 } from '../types';
 import {
   mockAdmin,
@@ -39,7 +41,7 @@ function paginate<T>(items: T[], page = 1, pageSize = 20): PaginatedResponse<T> 
   };
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://103.6.169.242/api';
 
 function getToken() {
   return localStorage.getItem('admin_token');
@@ -285,6 +287,15 @@ export const bookingsApi = {
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
     return new Response(blob);
   },
+
+  createManual: async (data: ManualBookingRequest): Promise<Booking> => {
+    const res = await apiFetch<any>(`${API_BASE_URL}/admin/bookings/manual/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res as Booking;
+  },
 };
 
 // ─── Fields ───────────────────────────────────────────────────────────────────
@@ -295,7 +306,7 @@ function normalizeField(raw: any): Field {
     description: raw.description || '',
     address: raw.address || '',
     city: raw.city || '',
-    price_per_hour: raw.price_per_hour ?? 0,
+    price_per_hour: raw.price_per_hour ? Number(raw.price_per_hour) : 0,
     opening_time: (raw.opening_time || '08:00').slice(0, 5),
     closing_time: (raw.closing_time || '22:00').slice(0, 5),
     is_active: raw.is_active ?? true,
@@ -307,7 +318,7 @@ function normalizeField(raw: any): Field {
     updated_at: raw.updated_at,
     location_url: raw.location_url || null,
     phone: raw.phone || '',
-    advance_booking_days: raw.advance_booking_days,
+    advance_booking_days: raw.advance_booking_days ?? 1,
     subscription_valid: raw.subscription_valid,
   };
 }
@@ -333,6 +344,9 @@ export const fieldsApi = {
       opening_time: data.opening_time ? `${data.opening_time}:00` : '08:00:00',
       closing_time: data.closing_time ? `${data.closing_time}:00` : '22:00:00',
       is_active: data.is_active ?? true,
+      location_url: data.location_url || null,
+      phone: data.phone || '',
+      advance_booking_days: data.advance_booking_days ?? 1,
     };
     const res = await apiFetch<any>(`${API_BASE_URL}/admin/fields/`, {
       method: 'POST',
@@ -342,22 +356,36 @@ export const fieldsApi = {
     return normalizeField(res);
   },
 
-  update: async (id: number, data: Partial<Field>): Promise<Field> => {
-    const payload: Record<string, any> = {};
-    if (data.name !== undefined) payload.name = data.name;
-    if (data.description !== undefined) payload.description = data.description;
-    if (data.address !== undefined) payload.address = data.address;
-    if (data.city !== undefined) payload.city = data.city;
-    if (data.price_per_hour !== undefined) payload.price_per_hour = Number(data.price_per_hour);
-    if (data.opening_time !== undefined) payload.opening_time = `${data.opening_time}:00`;
-    if (data.closing_time !== undefined) payload.closing_time = `${data.closing_time}:00`;
-    if (data.is_active !== undefined) payload.is_active = data.is_active;
+  update: async (id: number, data: Partial<Field> | FormData): Promise<Field> => {
+    let options: RequestInit;
+    
+    if (data instanceof FormData) {
+      options = {
+        method: 'PATCH',
+        body: data,
+      };
+    } else {
+      const payload: Record<string, any> = {};
+      if (data.name !== undefined) payload.name = data.name;
+      if (data.description !== undefined) payload.description = data.description;
+      if (data.address !== undefined) payload.address = data.address;
+      if (data.city !== undefined) payload.city = data.city;
+      if (data.price_per_hour !== undefined) payload.price_per_hour = Number(data.price_per_hour);
+      if (data.opening_time !== undefined) payload.opening_time = data.opening_time.includes(':') && data.opening_time.split(':').length === 2 ? `${data.opening_time}:00` : data.opening_time;
+      if (data.closing_time !== undefined) payload.closing_time = data.closing_time.includes(':') && data.closing_time.split(':').length === 2 ? `${data.closing_time}:00` : data.closing_time;
+      if (data.is_active !== undefined) payload.is_active = data.is_active;
+      if (data.location_url !== undefined) payload.location_url = data.location_url;
+      if (data.phone !== undefined) payload.phone = data.phone;
+      if (data.advance_booking_days !== undefined) payload.advance_booking_days = data.advance_booking_days;
 
-    const res = await apiFetch<any>(`${API_BASE_URL}/admin/fields/${id}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+      options = {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      };
+    }
+
+    const res = await apiFetch<any>(`${API_BASE_URL}/admin/fields/${id}/`, options);
     return normalizeField(res);
   },
 
@@ -415,6 +443,10 @@ export const fieldsApi = {
     await apiFetch<any>(`${API_BASE_URL}/admin/fields/${fieldId}/amenities/${amenityId}/`, {
       method: 'DELETE',
     });
+  },
+
+  getSlots: async (fieldId: number, date: string): Promise<Slot[]> => {
+    return apiFetch<Slot[]>(`${API_BASE_URL}/admin/fields/${fieldId}/slots/?date=${date}`);
   },
 };
 

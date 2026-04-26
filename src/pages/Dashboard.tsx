@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, LogOut, CalendarDays, Wallet, CheckCircle, XCircle, MapPin, TrendingUp, ChevronRight } from 'lucide-react';
+import { Bell, LogOut, CalendarDays, Wallet, CheckCircle, XCircle, MapPin, TrendingUp, ChevronRight, Plus } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -12,6 +12,7 @@ import { formatCurrency, formatDate } from '../utils';
 import StatusBadge from '../components/shared/StatusBadge';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import BookingDetailModal from '../components/bookings/BookingDetailModal';
+import ManualBookingModal from '../components/bookings/ManualBookingModal';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useToast } from '../context/ToastContext';
@@ -22,6 +23,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const { admin, logout } = useAuth();
   const { unreadCount } = useNotifications();
   const { showToast } = useToast();
@@ -269,6 +271,20 @@ export default function Dashboard() {
           onUpdate={load}
         />
       )}
+
+      <ManualBookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        onSuccess={load}
+      />
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setIsBookingModalOpen(true)}
+        className="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-200 active:scale-95 transition-all z-40"
+      >
+        <Plus size={32} strokeWidth={2.5} />
+      </button>
     </div>
   );
 }

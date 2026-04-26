@@ -27,12 +27,15 @@ export default function FieldSettingsTab({ field, onSaved, onDirty }: Props) {
 
   useEffect(() => {
     if (field) {
+      const price = typeof field.price_per_hour === 'string'
+        ? parseFloat(field.price_per_hour) || 0
+        : field.price_per_hour || 0;
       setForm({
         name: field.name || '',
         description: field.description || '',
         address: field.address || '',
         city: field.city || 'Toshkent',
-        price_per_hour: field.price_per_hour || 0,
+        price_per_hour: price,
         opening_time: field.opening_time || '08:00',
         closing_time: field.closing_time || '22:00',
         is_active: field.is_active ?? true,

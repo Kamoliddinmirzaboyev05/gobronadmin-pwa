@@ -42,6 +42,24 @@ export interface Amenity {
 
 export type BookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
 
+export interface Slot {
+  id: number;
+  field: number;
+  date: string;
+  start_time: string;
+  end_time: string;
+  is_active: boolean;
+  is_booked: boolean;
+}
+
+export interface ManualBookingRequest {
+  field_id: number;
+  date: string;
+  slot_ids: number[];
+  user_name: string;
+  user_phone: string;
+}
+
 export interface Booking {
   id: number;
   user: User;
