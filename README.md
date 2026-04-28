@@ -60,7 +60,7 @@ cp .env.example .env
 
 4. Configure API URL in `.env`:
 ```env
-VITE_API_URL=http://103.6.169.242/api
+VITE_API_URL=https://gobronapi.webportfolio.uz/api
 VITE_ENV=development
 ```
 

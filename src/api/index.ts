@@ -22,7 +22,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 if (!API_BASE_URL) {
   throw new Error(
     'VITE_API_URL environment variable is not defined. ' +
-    'Please create a .env file with VITE_API_URL=http://103.6.169.242/api'
+    'Please create a .env file with VITE_API_URL=https://gobronapi.webportfolio.uz/api'
   );
 }
 
