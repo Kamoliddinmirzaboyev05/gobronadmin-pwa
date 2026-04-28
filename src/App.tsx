@@ -11,7 +11,6 @@ import Fields from './pages/Fields';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import OfflineIndicator from './components/shared/OfflineIndicator';
-import UpdatePrompt from './components/shared/UpdatePrompt';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -75,7 +74,6 @@ export default function App() {
           <NotificationProvider>
             <AppRoutes />
             <OfflineIndicator />
-            <UpdatePrompt />
           </NotificationProvider>
         </AuthProvider>
       </ToastProvider>

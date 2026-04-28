@@ -1,9 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, ChevronDown } from 'lucide-react';
+import { Menu, Bell, ChevronDown, Download } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { timeAgo } from '../../utils';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../context/ToastContext';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 interface Props {
   title: string;
@@ -15,9 +21,15 @@ export default function Header({ title, onMenuClick }: Props) {
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           (window.navigator as any).standalone === true;
+  });
   const notifsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -29,12 +41,58 @@ export default function Header({ title, onMenuClick }: Props) {
       }
     };
 
+    // PWA install prompt handler
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      console.log('[PWA] Install prompt available');
+    };
+
+    // App installed handler
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      showToast('Ilova muvaffaqiyatli o\'rnatildi!', 'success');
+      console.log('[PWA] App installed');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
     document.addEventListener('mousedown', handler);
     
     return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
       document.removeEventListener('mousedown', handler);
     };
-  }, []);
+  }, [showToast]);
+
+  const handleInstallClick = async () => {
+    if (isInstalled) {
+      showToast('Ilova allaqachon o\'rnatilgan', 'info');
+      return;
+    }
+
+    if (!deferredPrompt) {
+      showToast('Brauzer PWA o\'rnatishni qo\'llab-quvvatlamaydi yoki ilova allaqachon o\'rnatilgan', 'info');
+      return;
+    }
+    
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`[PWA] User response: ${outcome}`);
+      
+      if (outcome === 'accepted') {
+        showToast('Ilova o\'rnatilmoqda...', 'info');
+      }
+      
+      setDeferredPrompt(null);
+    } catch (error) {
+      console.error('[PWA] Install error:', error);
+      showToast('O\'rnatishda xatolik', 'error');
+    }
+  };
 
   const handleNotifClick = async (notif: typeof notifications[0]) => {
     await markRead(notif.id);
@@ -57,8 +115,23 @@ export default function Header({ title, onMenuClick }: Props) {
         <h1 className="text-lg font-semibold text-gray-800">{title}</h1>
       </div>
 
-      {/* Right: notifications + profile */}
+      {/* Right: install + notifications + profile */}
       <div className="flex items-center gap-2">
+        {/* PWA Install Button */}
+        {!isInstalled && (
+          <button
+            onClick={handleInstallClick}
+            className={`p-2 rounded-xl transition-all active:scale-95 ${
+              deferredPrompt 
+                ? 'text-emerald-600 hover:bg-emerald-50 animate-pulse' 
+                : 'text-gray-400 hover:bg-gray-100'
+            }`}
+            title={deferredPrompt ? "Ilovani o'rnatish" : "O'rnatish mavjud emas"}
+          >
+            <Download size={20} />
+          </button>
+        )}
+
         {/* Notifications */}
         <div className="relative" ref={notifsRef}>
           <button
