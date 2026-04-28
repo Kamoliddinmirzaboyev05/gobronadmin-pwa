@@ -1,0 +1,10 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin-only pages from public indexing
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://gobronadmin.vercel.app/sitemap.xml

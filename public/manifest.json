@@ -1,12 +1,16 @@
 {
-  "name": "GoBron Admin",
-  "short_name": "GoBron",
-  "description": "GoBron futbol maydonlari admin paneli",
+  "name": "GoBron Admin - Futbol Maydonlari Boshqaruv Tizimi",
+  "short_name": "GoBron Admin",
+  "description": "O'zbekistondagi futbol maydonlarini boshqarish uchun zamonaviy admin panel. Bandliklarni boshqaring, statistikani kuzating, real-time bildirishnomalar oling.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f0f4f8",
+  "background_color": "#ffffff",
   "theme_color": "#10b981",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "categories": ["business", "sports", "productivity"],
+  "lang": "uz",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -19,6 +23,48 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Asosiy sahifa",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Bandliklar",
+      "short_name": "Bandliklar",
+      "description": "Bandliklarni boshqarish",
+      "url": "/bookings",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Maydonlar",
+      "short_name": "Maydonlar",
+      "description": "Maydonlarni boshqarish",
+      "url": "/fields",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

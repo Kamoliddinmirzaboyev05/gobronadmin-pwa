@@ -110,29 +110,26 @@ export default function Header({ title, onMenuClick }: Props) {
 
       {/* Right: notifications + profile */}
       <div className="flex items-center gap-2">
-        {/* PWA Install Button - Always visible */}
+        {/* PWA Install Button */}
         <button
           onClick={handleInstallClick}
-          className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${
-            isInstalled 
-              ? 'text-gray-400 cursor-default' 
+          className={`p-2 rounded-xl bg-red-500 transition-all ${
+            isInstalled
+              ? 'text-gray-400 cursor-default'
               : deferredPrompt 
-                ? 'text-emerald-600 hover:bg-emerald-50 animate-pulse' 
-                : 'text-gray-500 hover:bg-gray-100'
+                ? 'text-emerald-600 hover:bg-emerald-50 active:scale-95 shadow-sm' 
+                : 'text-gray-500 hover:bg-gray-100 active:scale-95'
           }`}
-          title={isInstalled ? 'Ilova o\'rnatilgan' : 'Ilovani o\'rnatish'}
+          title={isInstalled ? "Ilova o'rnatilgan" : "Ilovani o'rnatish"}
         >
           <Download size={20} />
-          <span className="hidden sm:inline text-xs font-medium">
-            {isInstalled ? 'O\'rnatilgan' : 'O\'rnatish'}
-          </span>
         </button>
 
         {/* Notifications */}
         <div className="relative" ref={notifsRef}>
           <button
             onClick={() => { setShowNotifs(!showNotifs); setShowProfile(false); }}
-            className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+            className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-all active:scale-95"
           >
             <Bell size={20} />
             {unreadCount > 0 && (
