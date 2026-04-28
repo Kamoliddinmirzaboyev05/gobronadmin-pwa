@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { timeAgo } from '../../utils';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '../../context/ToastContext';
 
 interface Props {
   title: string;
@@ -19,7 +18,6 @@ export default function Header({ title, onMenuClick }: Props) {
   const notifsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { showToast } = useToast();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

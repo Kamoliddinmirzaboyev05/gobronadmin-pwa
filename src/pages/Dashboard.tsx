@@ -143,7 +143,6 @@ export default function Dashboard() {
   // Filter bookings: Pending first, then next 3 upcoming confirmed
   const filteredBookings = (() => {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
     
     // 1. Pending bookings
     const pending = recentBookings.filter(b => b.status === 'pending');

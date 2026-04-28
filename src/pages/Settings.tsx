@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings2, Image, Star, MapPin, Bell, Plus, Trash2 } from 'lucide-react';
+import { Settings2, Image, Star, MapPin, Plus, Trash2 } from 'lucide-react';
 import { fieldsApi } from '../api';
 import type { Field } from '../types';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
