@@ -13,6 +13,7 @@ import StatusBadge from '../components/shared/StatusBadge';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import BookingDetailModal from '../components/bookings/BookingDetailModal';
 import ManualBookingModal from '../components/bookings/ManualBookingModal';
+import NotificationModal from '../components/shared/NotificationModal';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useToast } from '../context/ToastContext';
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const { admin } = useAuth();
   const { unreadCount } = useNotifications();
@@ -193,7 +195,7 @@ export default function Dashboard() {
             </button>
           )}
           <button
-            onClick={() => navigate('/bookings')}
+            onClick={() => setIsNotificationModalOpen(true)}
             className="relative w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
           >
             <Bell size={18} className="text-gray-600" />
@@ -260,52 +262,12 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Chart */}
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">Haftalik bandliklar</p>
-              <p className="text-xs text-gray-400">So'nggi 14 kun</p>
-            </div>
-            <button
-              onClick={() => navigate('/bookings')}
-              className="flex items-center gap-1 text-xs text-emerald-500 font-semibold"
-            >
-              Batafsil <ChevronRight size={14} />
-            </button>
-          </div>
-          <div style={{ height: 100 }}>
-            <Line data={lineData} options={lineOptions} />
-          </div>
-        </div>
-
-        {/* Status summary */}
-        <div className="card p-4">
-          <p className="font-semibold text-gray-800 text-sm mb-3">Holat bo'yicha</p>
-          <div className="space-y-2.5">
-            {[
-              { label: 'Kutilmoqda', count: stats?.by_status.pending ?? 0, color: 'bg-yellow-400', pct: stats ? Math.round((stats.by_status.pending / Math.max(stats.month.bookings, 1)) * 100) : 0 },
-              { label: 'Tasdiqlangan', count: stats?.by_status.confirmed ?? 0, color: 'bg-emerald-400', pct: stats ? Math.round((stats.by_status.confirmed / Math.max(stats.month.bookings, 1)) * 100) : 0 },
-              { label: 'Rad etilgan', count: stats?.by_status.rejected ?? 0, color: 'bg-red-400', pct: stats ? Math.round((stats.by_status.rejected / Math.max(stats.month.bookings, 1)) * 100) : 0 },
-              { label: 'Bekor qilingan', count: stats?.by_status.cancelled ?? 0, color: 'bg-gray-300', pct: stats ? Math.round((stats.by_status.cancelled / Math.max(stats.month.bookings, 1)) * 100) : 0 },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-3">
-                <p className="text-xs text-gray-500 w-28 shrink-0">{item.label}</p>
-                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={`h-full ${item.color} rounded-full transition-all`} style={{ width: `${item.pct}%` }} />
-                </div>
-                <p className="text-xs font-semibold text-gray-700 w-6 text-right">{item.count}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent bookings */}
+        {/* Recent bookings - So'rovlar */}
         <div className="card overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
-            <p className="font-semibold text-gray-800 text-sm">Yangi bandliklar</p>
+            <p className="font-semibold text-gray-800 text-sm">So'rovlar</p>
             <button
-              onClick={() => navigate('/bookings')}
+              onClick={() => navigate('/bookings?status=pending')}
               className="flex items-center gap-1 text-xs text-emerald-500 font-semibold"
             >
               Hammasi <ChevronRight size={14} />
@@ -317,7 +279,7 @@ export default function Dashboard() {
               <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                 <CalendarDays size={24} className="text-gray-300" />
               </div>
-              <p className="text-sm">Yangi bandliklar yo'q</p>
+              <p className="text-sm">So'rovlar yo'q</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
@@ -398,6 +360,46 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* Chart */}
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">Haftalik bandliklar</p>
+              <p className="text-xs text-gray-400">So'nggi 14 kun</p>
+            </div>
+            <button
+              onClick={() => navigate('/bookings')}
+              className="flex items-center gap-1 text-xs text-emerald-500 font-semibold"
+            >
+              Batafsil <ChevronRight size={14} />
+            </button>
+          </div>
+          <div style={{ height: 100 }}>
+            <Line data={lineData} options={lineOptions} />
+          </div>
+        </div>
+
+        {/* Status summary */}
+        <div className="card p-4">
+          <p className="font-semibold text-gray-800 text-sm mb-3">Holat bo'yicha</p>
+          <div className="space-y-2.5">
+            {[
+              { label: 'Kutilmoqda', count: stats?.by_status.pending ?? 0, color: 'bg-yellow-400', pct: stats ? Math.round((stats.by_status.pending / Math.max(stats.month.bookings, 1)) * 100) : 0 },
+              { label: 'Tasdiqlangan', count: stats?.by_status.confirmed ?? 0, color: 'bg-emerald-400', pct: stats ? Math.round((stats.by_status.confirmed / Math.max(stats.month.bookings, 1)) * 100) : 0 },
+              { label: 'Rad etilgan', count: stats?.by_status.rejected ?? 0, color: 'bg-red-400', pct: stats ? Math.round((stats.by_status.rejected / Math.max(stats.month.bookings, 1)) * 100) : 0 },
+              { label: 'Bekor qilingan', count: stats?.by_status.cancelled ?? 0, color: 'bg-gray-300', pct: stats ? Math.round((stats.by_status.cancelled / Math.max(stats.month.bookings, 1)) * 100) : 0 },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-3">
+                <p className="text-xs text-gray-500 w-28 shrink-0">{item.label}</p>
+                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className={`h-full ${item.color} rounded-full transition-all`} style={{ width: `${item.pct}%` }} />
+                </div>
+                <p className="text-xs font-semibold text-gray-700 w-6 text-right">{item.count}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {selectedBooking && (
@@ -412,6 +414,11 @@ export default function Dashboard() {
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
         onSuccess={load}
+      />
+
+      <NotificationModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
       />
 
       {/* Floating Action Button */}

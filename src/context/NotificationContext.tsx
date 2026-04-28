@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { Notification } from '../types';
 import { notificationsApi } from '../api';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -15,24 +16,65 @@ const NotificationContext = createContext<NotificationContextType | null>(null);
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [lastNotificationId, setLastNotificationId] = useState<number | null>(null);
 
   const refresh = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
       const data = await notificationsApi.getAll();
-      setNotifications(Array.isArray(data) ? data : []);
+      const notifList = Array.isArray(data) ? data : [];
+      
+      // Check for new notifications
+      if (notifList.length > 0 && lastNotificationId !== null) {
+        const newNotifications = notifList.filter(n => n.id > lastNotificationId && !n.is_read);
+        if (newNotifications.length > 0) {
+          // Show toast for the newest notification
+          const newest = newNotifications[0];
+          showToast(newest.message, 'info');
+          
+          // Show browser notification if permission granted
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('GoBron - Yangi bildirishnoma', {
+              body: newest.message,
+              icon: '/favicon.svg',
+              badge: '/favicon.svg',
+              tag: `notification-${newest.id}`,
+            });
+          }
+        }
+      }
+      
+      // Update last notification ID
+      if (notifList.length > 0) {
+        setLastNotificationId(notifList[0].id);
+      }
+      
+      setNotifications(notifList);
     } catch {
       // ignore
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, lastNotificationId, showToast]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    
+    // Initial load
     refresh();
-    const interval = setInterval(refresh, 30000);
+    
+    // Poll every 10 seconds for real-time updates
+    const interval = setInterval(refresh, 10000);
+    
     return () => clearInterval(interval);
   }, [isAuthenticated, refresh]);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const markAllRead = async () => {
     await notificationsApi.markAllRead();

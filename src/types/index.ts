@@ -131,8 +131,18 @@ export interface DashboardStats {
 
 export interface Notification {
   id: number;
+  recipient: number;
+  booking: number | null;
+  booking_info: {
+    id: number;
+    field_name: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    status: string;
+    user: string;
+  } | null;
   message: string;
-  booking_id?: number;
   is_read: boolean;
   created_at: string;
 }

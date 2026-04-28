@@ -68,8 +68,8 @@ export default function Header({ title, onMenuClick }: Props) {
   const handleNotifClick = async (notif: typeof notifications[0]) => {
     await markRead(notif.id);
     setShowNotifs(false);
-    if (notif.booking_id) {
-      navigate(`/bookings?id=${notif.booking_id}`);
+    if (notif.booking) {
+      navigate(`/bookings?id=${notif.booking}`);
     }
   };
 
