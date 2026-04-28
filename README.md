@@ -12,6 +12,7 @@ Admin panel for GoBron football field booking system with real-time API integrat
 - 🎨 Modern UI with Tailwind CSS
 - 🔐 JWT authentication with auto-refresh
 - 📤 CSV export for bookings
+- 📲 **Progressive Web App (PWA)** - O'rnatish, offline rejim, push notifications
 
 ## Tech Stack
 
@@ -21,6 +22,7 @@ Admin panel for GoBron football field booking system with real-time API integrat
 - React Router
 - Chart.js
 - REST API Integration
+- **PWA** (Progressive Web App) - vite-plugin-pwa, Workbox
 
 ## API Integration
 
@@ -67,7 +69,13 @@ VITE_ENV=development
 npm run dev
 ```
 
-6. Build for production:
+6. Generate PWA icons (optional):
+```bash
+npm run pwa:generate-icons
+# Yoki to'g'ridan-to'g'ri: open generate-icons.html
+```
+
+7. Build for production:
 ```bash
 npm run build
 ```
@@ -183,6 +191,51 @@ npm run preview
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+- `npm run pwa:generate-icons` - Open PWA icon generator
+
+## PWA (Progressive Web App)
+
+GoBron Admin to'liq PWA sifatida ishlaydi:
+
+### ✨ PWA Xususiyatlari
+- 📲 **O'rnatish** - Telefon/kompyuterga ilova sifatida o'rnatish
+- 🚀 **Tez yuklash** - Cache orqali tezkor ishlash
+- 📡 **Offline rejim** - Internet yo'q bo'lsa ham ishlaydi
+- 🔄 **Avtomatik yangilanish** - Yangi versiya avtomatik o'rnatiladi
+- 🔔 **Push notifications** - Real-time bildirishnomalar
+- 📱 **Native tajriba** - Mobil ilova kabi ishlaydi
+
+### 📱 O'rnatish
+
+**Android (Chrome):**
+1. Saytga kiring
+2. Header'dagi Download iconni bosing
+3. "O'rnatish" tugmasini bosing
+
+**iOS (Safari):**
+1. Safari'da saytga kiring
+2. Share tugmasini bosing
+3. "Add to Home Screen" ni tanlang
+
+**Desktop:**
+1. Chrome/Edge'da saytga kiring
+2. Address bar'dagi install iconni bosing
+
+### 🛠️ PWA Development
+
+```bash
+# Icon generator
+npm run pwa:generate-icons
+
+# Development (PWA enabled)
+npm run dev
+
+# Build with PWA
+npm run build
+```
+
+**Batafsil qo'llanma:** [PWA-GUIDE.md](./PWA-GUIDE.md)  
+**Tezkor boshlash:** [PWA-QUICK-START.md](./PWA-QUICK-START.md)
 
 ## License
 

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoBron Icon Generator</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #10b981;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    canvas {
+      display: none;
+    }
+    .preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
+      margin: 30px 0;
+    }
+    .preview-item {
+      text-align: center;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+    .preview-item img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .preview-item p {
+      margin: 10px 0 0;
+      font-size: 12px;
+      color: #666;
+    }
+    button {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .success {
+      background: #d1fae5;
+      color: #065f46;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+    .instructions {
+      background: #fef3c7;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #f59e0b;
+    }
+    .instructions h3 {
+      margin-top: 0;
+      color: #92400e;
+    }
+    .instructions ol {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    .instructions li {
+      margin: 5px 0;
+      color: #78350f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚽ GoBron Icon Generator</h1>
+    <p class="subtitle">PWA uchun barcha kerakli iconlarni yaratish</p>
+
+    <div class="instructions">
+      <h3>📋 Qo'llanma:</h3>
+      <ol>
+        <li>"Iconlarni Yaratish" tugmasini bosing</li>
+        <li>Har bir icon ustiga o'ng tugma bilan bosing</li>
+        <li>"Save image as..." ni tanlang</li>
+        <li>Faylni <code>public/</code> papkasiga saqlang</li>
+        <li>Fayl nomini o'zgartirmang!</li>
+      </ol>
+    </div>
+
+    <button onclick="generateIcons()">🎨 Iconlarni Yaratish</button>
+
+    <div id="preview" class="preview"></div>
+    <div id="success" class="success">
+      ✅ Barcha iconlar yaratildi! Endi har birini o'ng tugma bilan bosib, public/ papkasiga saqlang.
+    </div>
+  </div>
+
+  <script>
+    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    const maskableSizes = [192, 512];
+
+    function generateIcons() {
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+
+      // Regular icons
+      sizes.forEach(size => {
+        const canvas = createIcon(size, false);
+        addToPreview(canvas, size, 'icon', preview);
+      });
+
+      // Maskable icons
+      maskableSizes.forEach(size => {
+        const canvas = createIcon(size, true);
+        addToPreview(canvas, size, 'icon-maskable', preview);
+      });
+
+      // Apple touch icon
+      const appleIcon = createIcon(180, false);
+      addToPreview(appleIcon, 180, 'apple-touch-icon', preview);
+
+      // Favicon sizes
+      [16, 32].forEach(size => {
+        const canvas = createIcon(size, false);
+        addToPreview(canvas, size, 'favicon', preview);
+      });
+
+      document.getElementById('success').style.display = 'block';
+    }
+
+    function createIcon(size, maskable = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // Background
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#10b981');
+      gradient.addColorStop(1, '#059669');
+      ctx.fillStyle = gradient;
+      
+      if (maskable) {
+        // Maskable icon - to'liq kvadrat
+        ctx.fillRect(0, 0, size, size);
+      } else {
+        // Regular icon - rounded corners
+        const radius = size * 0.2;
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(size - radius, 0);
+        ctx.quadraticCurveTo(size, 0, size, radius);
+        ctx.lineTo(size, size - radius);
+        ctx.quadraticCurveTo(size, size, size - radius, size);
+        ctx.lineTo(radius, size);
+        ctx.quadraticCurveTo(0, size, 0, size - radius);
+        ctx.lineTo(0, radius);
+        ctx.quadraticCurveTo(0, 0, radius, 0);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Text
+      ctx.fillStyle = 'white';
+      ctx.font = `bold ${size * 0.5}px system-ui, -apple-system, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('GB', size / 2, size / 2);
+
+      // Subtitle
+      ctx.font = `${size * 0.12}px system-ui`;
+      ctx.fillText('ADMIN', size / 2, size * 0.75);
+
+      return canvas;
+    }
+
+    function addToPreview(canvas, size, prefix, container) {
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.alt = `${prefix}-${size}`;
+      
+      const p = document.createElement('p');
+      p.textContent = `${prefix}-${size}.png`;
+      
+      div.appendChild(img);
+      div.appendChild(p);
+      container.appendChild(div);
+    }
+  </script>
+</body>
+</html>
