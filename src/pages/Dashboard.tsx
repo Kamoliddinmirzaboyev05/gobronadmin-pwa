@@ -6,7 +6,7 @@ import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
   LineElement, Filler, Tooltip,
 } from 'chart.js';
-import { dashboardApi } from '../api';
+import { dashboardApi, bookingsApi } from '../api';
 import type { DashboardStats, Booking } from '../types';
 import { formatCurrency, formatDate } from '../utils';
 import StatusBadge from '../components/shared/StatusBadge';
@@ -27,9 +27,11 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, 
 
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
   const { admin } = useAuth();
   const { unreadCount } = useNotifications();
   const { showToast } = useToast();
@@ -81,8 +83,12 @@ export default function Dashboard() {
 
   const load = useCallback(async () => {
     try {
-      const data = await dashboardApi.getStats();
-      setStats(data);
+      const [statsData, bookingsData] = await Promise.all([
+        dashboardApi.getStats(),
+        dashboardApi.getRecentBookings(10),
+      ]);
+      setStats(statsData);
+      setRecentBookings(bookingsData.results);
     } catch {
       showToast('Xatolik yuz berdi', 'error');
     } finally {
@@ -92,23 +98,49 @@ export default function Dashboard() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleConfirm = async (bookingId: number) => {
+    setActionLoading(bookingId);
+    try {
+      await bookingsApi.confirm(bookingId);
+      showToast('Bron tasdiqlandi!', 'success');
+      load();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Xatolik', 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (bookingId: number) => {
+    setActionLoading(bookingId);
+    try {
+      await bookingsApi.reject(bookingId);
+      showToast('Bron rad etildi', 'info');
+      load();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Xatolik', 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const confirmRate = stats
-    ? stats.bookings_by_status.confirmed + stats.bookings_by_status.pending > 0
-      ? Math.round((stats.bookings_by_status.confirmed / (stats.bookings_by_status.confirmed + stats.bookings_by_status.pending + stats.bookings_by_status.rejected + stats.bookings_by_status.cancelled)) * 100)
+    ? stats.by_status.confirmed + stats.by_status.pending > 0
+      ? Math.round((stats.by_status.confirmed / (stats.by_status.confirmed + stats.by_status.pending + stats.by_status.rejected + stats.by_status.cancelled)) * 100)
       : 0
     : 0;
 
   const cancelRate = stats
-    ? Math.round(((stats.bookings_by_status.cancelled + stats.bookings_by_status.rejected) / Math.max(stats.monthly_bookings, 1)) * 100)
+    ? Math.round(((stats.by_status.cancelled + stats.by_status.rejected) / Math.max(stats.month.bookings, 1)) * 100)
     : 0;
 
   const lineData = {
-    labels: stats?.bookings_per_day?.slice(-14).map((d) => {
+    labels: stats?.per_day_last_30?.slice(-14).map((d) => {
       const dt = new Date(d.date);
       return `${dt.getDate()}`;
     }) || [],
     datasets: [{
-      data: stats?.bookings_per_day?.slice(-14).map((d) => d.count) || [],
+      data: stats?.per_day_last_30?.slice(-14).map((d) => d.bookings) || [],
       borderColor: '#10b981',
       backgroundColor: 'rgba(16,185,129,0.08)',
       borderWidth: 2,
@@ -179,11 +211,11 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-2xl icon-bg-blue flex items-center justify-center mb-3">
               <CalendarDays size={20} className="text-blue-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-800">{stats?.today_bookings ?? 0}</p>
+            <p className="text-2xl font-bold text-gray-800">{stats?.today.bookings ?? 0}</p>
             <p className="text-xs text-gray-500 mt-0.5">Bugungi bandliklar</p>
             <div className="flex items-center gap-1 mt-2">
               <TrendingUp size={12} className="text-emerald-500" />
-              <span className="text-xs text-emerald-500 font-medium">+{stats?.today_bookings_trend ?? 0}% kecha</span>
+              <span className="text-xs text-emerald-500 font-medium">Bugun</span>
             </div>
           </div>
           <div className="card p-4">
@@ -191,7 +223,7 @@ export default function Dashboard() {
               <Wallet size={20} className="text-yellow-500" />
             </div>
             <p className="text-2xl font-bold text-gray-800">
-              {((stats?.monthly_revenue ?? 0) / 1000000).toFixed(1)}mln
+              {((stats?.month.revenue ?? 0) / 1000000).toFixed(1)}mln
             </p>
             <p className="text-xs text-gray-500 mt-0.5">Oylik tushum (so'm)</p>
             <div className="flex items-center gap-1 mt-2">
@@ -222,7 +254,7 @@ export default function Dashboard() {
               <div className="w-8 h-8 rounded-xl icon-bg-purple flex items-center justify-center">
                 <MapPin size={16} className="text-purple-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800">{stats?.monthly_bookings ?? 0}</p>
+              <p className="text-lg font-bold text-gray-800">{stats?.month.bookings ?? 0}</p>
               <p className="text-[10px] text-gray-400 text-center">Bu oy</p>
             </div>
           </div>
@@ -252,10 +284,10 @@ export default function Dashboard() {
           <p className="font-semibold text-gray-800 text-sm mb-3">Holat bo'yicha</p>
           <div className="space-y-2.5">
             {[
-              { label: 'Kutilmoqda', count: stats?.bookings_by_status.pending ?? 0, color: 'bg-yellow-400', pct: stats ? Math.round((stats.bookings_by_status.pending / Math.max(stats.monthly_bookings, 1)) * 100) : 0 },
-              { label: 'Tasdiqlangan', count: stats?.bookings_by_status.confirmed ?? 0, color: 'bg-emerald-400', pct: stats ? Math.round((stats.bookings_by_status.confirmed / Math.max(stats.monthly_bookings, 1)) * 100) : 0 },
-              { label: 'Rad etilgan', count: stats?.bookings_by_status.rejected ?? 0, color: 'bg-red-400', pct: stats ? Math.round((stats.bookings_by_status.rejected / Math.max(stats.monthly_bookings, 1)) * 100) : 0 },
-              { label: 'Bekor qilingan', count: stats?.bookings_by_status.cancelled ?? 0, color: 'bg-gray-300', pct: stats ? Math.round((stats.bookings_by_status.cancelled / Math.max(stats.monthly_bookings, 1)) * 100) : 0 },
+              { label: 'Kutilmoqda', count: stats?.by_status.pending ?? 0, color: 'bg-yellow-400', pct: stats ? Math.round((stats.by_status.pending / Math.max(stats.month.bookings, 1)) * 100) : 0 },
+              { label: 'Tasdiqlangan', count: stats?.by_status.confirmed ?? 0, color: 'bg-emerald-400', pct: stats ? Math.round((stats.by_status.confirmed / Math.max(stats.month.bookings, 1)) * 100) : 0 },
+              { label: 'Rad etilgan', count: stats?.by_status.rejected ?? 0, color: 'bg-red-400', pct: stats ? Math.round((stats.by_status.rejected / Math.max(stats.month.bookings, 1)) * 100) : 0 },
+              { label: 'Bekor qilingan', count: stats?.by_status.cancelled ?? 0, color: 'bg-gray-300', pct: stats ? Math.round((stats.by_status.cancelled / Math.max(stats.month.bookings, 1)) * 100) : 0 },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-3">
                 <p className="text-xs text-gray-500 w-28 shrink-0">{item.label}</p>
@@ -271,7 +303,7 @@ export default function Dashboard() {
         {/* Recent bookings */}
         <div className="card overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
-            <p className="font-semibold text-gray-800 text-sm">Yaqin bandliklar</p>
+            <p className="font-semibold text-gray-800 text-sm">Yangi bandliklar</p>
             <button
               onClick={() => navigate('/bookings')}
               className="flex items-center gap-1 text-xs text-emerald-500 font-semibold"
@@ -280,35 +312,88 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {(!stats?.recent_bookings || stats.recent_bookings.length === 0) ? (
+          {(!recentBookings || recentBookings.length === 0) ? (
             <div className="py-10 flex flex-col items-center gap-2 text-gray-400">
               <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                 <CalendarDays size={24} className="text-gray-300" />
               </div>
-              <p className="text-sm">Yaqin bandliklar yo'q</p>
+              <p className="text-sm">Yangi bandliklar yo'q</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {stats.recent_bookings.slice(0, 5).map((b) => (
-                <button
+              {recentBookings.slice(0, 5).map((b) => (
+                <div
                   key={b.id}
-                  onClick={() => setSelectedBooking(b)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+                  className="px-4 py-3 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-emerald-600">
-                      {b.user?.name?.charAt(0)?.toUpperCase()}
-                    </span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
+                      <span className="text-sm font-bold text-white">
+                        {b.client_name?.charAt(0)?.toUpperCase() || '?'}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-gray-800 truncate">{b.client_name}</p>
+                          <p className="text-xs text-gray-500 truncate">{b.field_name}</p>
+                        </div>
+                        <StatusBadge status={b.status} />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
+                        <span>{formatDate(b.date)}</span>
+                        <span>•</span>
+                        <span>{b.start_time.slice(0, 5)}–{b.end_time.slice(0, 5)}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-emerald-600">{formatCurrency(Number(b.total_price))}</span>
+                      </div>
+                      
+                      {/* Action buttons for pending bookings */}
+                      {b.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleConfirm(b.id)}
+                            disabled={actionLoading === b.id}
+                            className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60 active:scale-95 transition-all"
+                          >
+                            {actionLoading === b.id ? (
+                              <LoadingSpinner size={12} />
+                            ) : (
+                              <>
+                                <CheckCircle size={12} />
+                                Tasdiqlash
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleReject(b.id)}
+                            disabled={actionLoading === b.id}
+                            className="flex-1 py-2 px-3 rounded-xl bg-red-50 text-red-500 text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60 active:scale-95 transition-all"
+                          >
+                            {actionLoading === b.id ? (
+                              <LoadingSpinner size={12} />
+                            ) : (
+                              <>
+                                <XCircle size={12} />
+                                Rad etish
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* View details button for non-pending */}
+                      {b.status !== 'pending' && (
+                        <button
+                          onClick={() => setSelectedBooking(b)}
+                          className="text-xs text-emerald-500 font-medium hover:underline"
+                        >
+                          Batafsil ko'rish
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{b.user?.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{b.field?.name} • {formatDate(b.date)}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <StatusBadge status={b.status} />
-                    <p className="text-xs font-semibold text-gray-700">{formatCurrency(b.total_price)}</p>
-                  </div>
-                </button>
+                </div>
               ))}
             </div>
           )}

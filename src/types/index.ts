@@ -62,18 +62,25 @@ export interface ManualBookingRequest {
 
 export interface Booking {
   id: number;
-  user: User;
-  field: Field;
+  field: number;
+  field_name: string;
+  field_city: string;
+  user: number | null;
+  guest_full_name: string | null;
+  guest_phone: string | null;
+  booking_type: 'online' | 'manual';
+  booking_type_display: string;
+  client_name: string;
+  client_phone: string;
   date: string;
   start_time: string;
   end_time: string;
-  duration: number;
-  total_price: number;
   status: BookingStatus;
-  note?: string;
-  reject_reason?: string;
+  status_display: string;
+  total_price: string;
+  note: string;
   created_at: string;
-  status_history?: StatusHistory[];
+  confirmed_at: string | null;
 }
 
 export interface StatusHistory {
@@ -84,22 +91,42 @@ export interface StatusHistory {
 }
 
 export interface DashboardStats {
-  today_bookings: number;
-  today_bookings_trend: number;
-  weekly_bookings: number;
-  weekly_bookings_trend: number;
-  monthly_bookings: number;
-  monthly_bookings_trend: number;
-  monthly_revenue: number;
-  monthly_revenue_trend: number;
-  bookings_per_day: { date: string; count: number }[];
-  bookings_by_status: {
+  today: {
+    bookings: number;
+    revenue: number;
+  };
+  week: {
+    bookings: number;
+    revenue: number;
+  };
+  month: {
+    bookings: number;
+    revenue: number;
+  };
+  total: {
+    bookings: number;
+    revenue: number;
+    fields: number;
+    users: number;
+  };
+  by_status: {
     pending: number;
     confirmed: number;
     rejected: number;
     cancelled: number;
   };
-  recent_bookings: Booking[];
+  per_day_last_30: {
+    date: string;
+    bookings: number;
+    revenue: number;
+  }[];
+  top_fields: {
+    id: number;
+    name: string;
+    bookings: number;
+    revenue: number;
+  }[];
+  unread_notifications: number;
 }
 
 export interface Notification {

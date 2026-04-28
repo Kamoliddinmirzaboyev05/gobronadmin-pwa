@@ -6,6 +6,7 @@ import { formatCurrency, formatDate, downloadBlob } from '../utils';
 import StatusBadge from '../components/shared/StatusBadge';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import BookingDetailModal from '../components/bookings/BookingDetailModal';
+import ManualBookingModal from '../components/bookings/ManualBookingModal';
 import { useToast } from '../context/ToastContext';
 import { useSearchParams } from 'react-router-dom';
 
@@ -33,6 +34,7 @@ export default function Bookings() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [isManualBookingOpen, setIsManualBookingOpen] = useState(false);
   const { showToast } = useToast();
   const [searchParams] = useSearchParams();
 
@@ -173,7 +175,7 @@ export default function Bookings() {
       )}
 
       {/* List */}
-      <div className="px-4 space-y-2">
+      <div className="px-4 space-y-2.5">
         {loading ? (
           <div className="flex justify-center py-16">
             <LoadingSpinner size={32} className="text-emerald-500" />
@@ -188,21 +190,25 @@ export default function Bookings() {
             <button
               key={b.id}
               onClick={() => setSelectedBooking(b)}
-              className="card w-full p-4 flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
+              className="card w-full p-4 flex items-center gap-3.5 text-left active:scale-[0.98] transition-transform hover:shadow-md"
             >
-              <div className="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
-                <span className="text-base font-bold text-emerald-600">
-                  {b.user?.name?.charAt(0)?.toUpperCase()}
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
+                <span className="text-lg font-bold text-white">
+                  {b.client_name?.charAt(0)?.toUpperCase() || '?'}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 truncate">{b.user?.name}</p>
-                <p className="text-xs text-gray-400 truncate">{b.field?.name}</p>
-                <p className="text-xs text-gray-400">{formatDate(b.date)} • {b.start_time}–{b.end_time}</p>
+                <p className="text-sm font-bold text-gray-800 truncate mb-0.5">{b.client_name}</p>
+                <p className="text-xs text-gray-500 truncate mb-1">{b.field_name}</p>
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <span>{formatDate(b.date)}</span>
+                  <span>•</span>
+                  <span>{b.start_time.slice(0, 5)}–{b.end_time.slice(0, 5)}</span>
+                </div>
               </div>
-              <div className="flex flex-col items-end gap-1.5">
+              <div className="flex flex-col items-end gap-2">
                 <StatusBadge status={b.status} />
-                <p className="text-xs font-bold text-gray-700">{formatCurrency(b.total_price)}</p>
+                <p className="text-sm font-bold text-emerald-600">{formatCurrency(Number(b.total_price))}</p>
               </div>
             </button>
           ))
@@ -234,7 +240,7 @@ export default function Bookings() {
 
       {/* FAB */}
       <button
-        onClick={() => showToast('Yangi bron qo\'shish', 'info')}
+        onClick={() => setIsManualBookingOpen(true)}
         className="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-emerald-500 shadow-xl shadow-emerald-300 flex items-center justify-center z-40 active:scale-95 transition-transform"
       >
         <Plus size={24} className="text-white" />
@@ -247,6 +253,12 @@ export default function Bookings() {
           onUpdate={load}
         />
       )}
+
+      <ManualBookingModal
+        isOpen={isManualBookingOpen}
+        onClose={() => setIsManualBookingOpen(false)}
+        onSuccess={load}
+      />
     </div>
   );
 }

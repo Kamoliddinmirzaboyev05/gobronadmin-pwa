@@ -32,10 +32,9 @@ export default function BookingDetailModal({ booking, onClose, onUpdate }: Props
   };
 
   const handleReject = async () => {
-    if (!rejectReason.trim()) { showToast('Sababni kiriting', 'warning'); return; }
     setLoading('reject');
     try {
-      await bookingsApi.reject(booking.id, rejectReason);
+      await bookingsApi.reject(booking.id, rejectReason.trim() || undefined);
       showToast('Bron rad etildi', 'info');
       onUpdate(); onClose();
     } catch (err: unknown) {
@@ -63,24 +62,28 @@ export default function BookingDetailModal({ booking, onClose, onUpdate }: Props
           <span className="text-xs text-gray-400">{formatDateTime(booking.created_at)}</span>
         </div>
 
-        {/* User */}
+        {/* Client Info */}
         <div className="bg-gray-50 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-xl bg-blue-100 flex items-center justify-center">
               <User size={14} className="text-blue-500" />
             </div>
-            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Foydalanuvchi</p>
+            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Mijoz</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-[10px] text-gray-400 mb-0.5">Ism</p>
-              <p className="text-sm font-semibold text-gray-800">{booking.user?.name}</p>
+              <p className="text-sm font-semibold text-gray-800">{booking.client_name}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 mb-0.5">Telefon</p>
-              <a href={`tel:${booking.user?.phone}`} className="text-sm font-semibold text-emerald-600">
-                {booking.user?.phone}
+              <a href={`tel:${booking.client_phone}`} className="text-sm font-semibold text-emerald-600">
+                {booking.client_phone}
               </a>
+            </div>
+            <div className="col-span-2">
+              <p className="text-[10px] text-gray-400 mb-0.5">Bron turi</p>
+              <p className="text-sm font-medium text-gray-700">{booking.booking_type_display}</p>
             </div>
           </div>
         </div>
@@ -93,8 +96,8 @@ export default function BookingDetailModal({ booking, onClose, onUpdate }: Props
             </div>
             <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Maydon</p>
           </div>
-          <p className="text-sm font-semibold text-gray-800">{booking.field?.name}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{booking.field?.city} • {booking.field?.address}</p>
+          <p className="text-sm font-semibold text-gray-800">{booking.field_name}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{booking.field_city}</p>
         </div>
 
         {/* Booking details */}
@@ -112,16 +115,24 @@ export default function BookingDetailModal({ booking, onClose, onUpdate }: Props
             </div>
             <div>
               <p className="text-[10px] text-gray-400 mb-0.5">Vaqt</p>
-              <p className="text-sm font-semibold text-gray-800">{booking.start_time}–{booking.end_time}</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {booking.start_time.slice(0, 5)}–{booking.end_time.slice(0, 5)}
+              </p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 mb-0.5">Davomiylik</p>
-              <p className="text-sm font-semibold text-gray-800">{booking.duration} soat</p>
+              <p className="text-[10px] text-gray-400 mb-0.5">Holat</p>
+              <p className="text-sm font-medium text-gray-700">{booking.status_display}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 mb-0.5">Narx</p>
-              <p className="text-sm font-bold text-emerald-500">{formatCurrency(booking.total_price)}</p>
+              <p className="text-sm font-bold text-emerald-500">{formatCurrency(Number(booking.total_price))}</p>
             </div>
+            {booking.confirmed_at && (
+              <div className="col-span-2">
+                <p className="text-[10px] text-gray-400 mb-0.5">Tasdiqlangan vaqt</p>
+                <p className="text-sm text-gray-700">{formatDateTime(booking.confirmed_at)}</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -130,34 +141,6 @@ export default function BookingDetailModal({ booking, onClose, onUpdate }: Props
           <div className="bg-blue-50 rounded-2xl p-4">
             <p className="text-xs font-bold text-blue-600 mb-1">Izoh</p>
             <p className="text-sm text-blue-700">{booking.note}</p>
-          </div>
-        )}
-
-        {/* Reject reason */}
-        {booking.reject_reason && (
-          <div className="bg-red-50 rounded-2xl p-4">
-            <p className="text-xs font-bold text-red-600 mb-1">Rad etish sababi</p>
-            <p className="text-sm text-red-700">{booking.reject_reason}</p>
-          </div>
-        )}
-
-        {/* Status history */}
-        {booking.status_history && booking.status_history.length > 0 && (
-          <div>
-            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-3">Holat tarixi</p>
-            <div className="space-y-2">
-              {booking.status_history.map((h, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-700 font-medium">{h.status}
-                      {h.changed_by && <span className="text-gray-400 font-normal"> — {h.changed_by}</span>}
-                    </p>
-                    <p className="text-xs text-gray-400">{formatDateTime(h.changed_at)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 

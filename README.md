@@ -1,15 +1,18 @@
 # GoBron Admin Panel
 
-Admin panel for GoBron football field booking system.
+Admin panel for GoBron football field booking system with real-time API integration.
 
 ## Features
 
-- 📊 Dashboard with statistics
-- 📅 Booking management
-- ⚽ Field management
+- 📊 Real-time dashboard with statistics
+- 📅 Complete booking management (view, confirm, reject, cancel)
+- ➕ Manual booking creation
+- ⚽ Field management with images and amenities
 - 🔔 Push notifications (PWA)
 - 📱 Mobile-first responsive design
 - 🎨 Modern UI with Tailwind CSS
+- 🔐 JWT authentication with auto-refresh
+- 📤 CSV export for bookings
 
 ## Tech Stack
 
@@ -19,6 +22,23 @@ Admin panel for GoBron football field booking system.
 - React Router
 - Chart.js
 - PWA Support
+- REST API Integration
+
+## API Integration
+
+This application is fully integrated with the GoBron backend API:
+
+### Endpoints Used:
+- **Auth**: `/auth/login/`, `/auth/register/`, `/auth/token/refresh/`, `/auth/logout/`, `/auth/me/`
+- **Dashboard**: `/admin/dashboard/stats/`
+- **Bookings**: `/admin/bookings/`, `/admin/bookings/{id}/`, `/admin/bookings/{id}/confirm/`, `/admin/bookings/{id}/reject/`, `/admin/bookings/{id}/cancel/`, `/admin/bookings/manual/`, `/admin/bookings/export/`
+- **Fields**: `/admin/fields/`, `/admin/fields/{id}/`, `/admin/fields/{id}/images/`, `/admin/fields/{id}/amenities/`, `/admin/fields/{id}/slots/`
+- **Notifications**: `/admin/notifications/`, `/admin/notifications/mark-all-read/`
+
+### Authentication
+- JWT token-based authentication
+- Automatic token refresh on 401 errors
+- Secure token storage in localStorage
 
 ## Setup
 
@@ -33,18 +53,16 @@ cd football-admin
 npm install
 ```
 
-3. Create `.env` file from example:
+3. Create `.env` file:
 ```bash
 cp .env.example .env
 ```
 
-4. The project is configured to use production API:
+4. Configure API URL in `.env`:
 ```env
 VITE_API_URL=http://103.6.169.242/api
 VITE_ENV=development
 ```
-
-**Note:** This project uses the production API (http://103.6.169.242/api) for all environments. No localhost setup required.
 
 5. Start development server:
 ```bash
@@ -65,16 +83,42 @@ npm run build
 
 ```
 src/
-├── api/           # API client and endpoints
-├── assets/        # Static assets
-├── components/    # React components
-├── context/       # React context providers
-├── hooks/         # Custom React hooks
-├── lib/           # Utility libraries
-├── pages/         # Page components
-├── types/         # TypeScript type definitions
-└── utils/         # Utility functions
+├── api/
+│   ├── index.ts        # API client with all endpoints
+│   └── mockData.ts     # Mock data (deprecated, not used)
+├── components/
+│   ├── bookings/       # Booking-related components
+│   ├── fields/         # Field management components
+│   ├── settings/       # Settings components
+│   └── shared/         # Reusable UI components
+├── context/            # React context providers (Auth, Toast, Notifications)
+├── pages/              # Main page components
+├── types/              # TypeScript interfaces
+└── utils/              # Helper functions
 ```
+
+## Key Features
+
+### Booking Management
+- View all bookings with filters (status, date range, field, search)
+- Detailed booking view with client info
+- Confirm/reject/cancel bookings
+- Manual booking creation with slot selection
+- Export bookings to CSV
+
+### Dashboard
+- Today's bookings count with trend
+- Monthly revenue statistics
+- Booking status breakdown
+- 14-day booking chart
+- Recent bookings list
+
+### Field Management
+- Create/edit/delete fields
+- Upload and manage field images
+- Add amenities
+- Set pricing and working hours
+- View available slots
 
 ## Available Scripts
 

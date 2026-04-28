@@ -15,32 +15,8 @@ import type {
   Slot,
   ManualBookingRequest,
 } from '../types';
-import {
-  mockAdmin,
-  mockBookings as _mockBookings,
-  mockNotifications as _mockNotifications,
-  mockDashboardStats,
-} from './mockData';
-
-// ─── In-memory store ──────────────────────────────────────────────────────────
-const bookings: Booking[] = JSON.parse(JSON.stringify(_mockBookings));
-const adminProfile: AdminProfile = { ...mockAdmin };
-let notifications: Notification[] = JSON.parse(JSON.stringify(_mockNotifications));
-let nextNotifId = 50;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
-
-function paginate<T>(items: T[], page = 1, pageSize = 20): PaginatedResponse<T> {
-  const start = (page - 1) * pageSize;
-  return {
-    count: items.length,
-    next: start + pageSize < items.length ? 'next' : null,
-    previous: page > 1 ? 'prev' : null,
-    results: items.slice(start, start + pageSize),
-  };
-}
-
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 if (!API_BASE_URL) {
@@ -111,8 +87,6 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
       res = await makeRequest(newAccessToken);
     } catch (refreshError: unknown) {
       console.error('[API] Token refresh failed during request:', refreshError);
-      // Refresh ham o'xshamadi - xatoni qaytaramiz
-      // Tokenlarni o'chirish refreshToken funksiyasining ichida bajariladi (agar 401/400 bo'lsa)
       throw refreshError;
     }
   }
@@ -152,7 +126,6 @@ export const authApi = {
       avatar: user.avatar_url || undefined,
     };
 
-    // localStorage'ga xavfsiz saqlash
     saveToken('admin_token', data.access);
     if (data.refresh) saveToken('admin_refresh', data.refresh);
     if (import.meta.env.DEV) {
@@ -188,7 +161,6 @@ export const authApi = {
       avatar: user.avatar_url || undefined,
     };
 
-    // localStorage'ga xavfsiz saqlash
     saveToken('admin_token', data.access);
     if (data.refresh) saveToken('admin_refresh', data.refresh);
     if (import.meta.env.DEV) {
@@ -213,7 +185,6 @@ export const authApi = {
       });
 
       if (res.status === 401 || res.status === 400) {
-        // Faqat token yaroqsiz bo'lgandagina o'chiramiz
         removeToken('admin_token');
         removeToken('admin_refresh');
         throw new Error('Sessiya tugadi');
@@ -264,123 +235,71 @@ export const authApi = {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export const dashboardApi = {
   getStats: async (): Promise<DashboardStats> => {
-    await delay(400);
-    return {
-      ...mockDashboardStats,
-      recent_bookings: bookings.slice(0, 10),
-      bookings_by_status: {
-        pending: bookings.filter((b) => b.status === 'pending').length,
-        confirmed: bookings.filter((b) => b.status === 'confirmed').length,
-        rejected: bookings.filter((b) => b.status === 'rejected').length,
-        cancelled: bookings.filter((b) => b.status === 'cancelled').length,
-      },
-    };
+    return apiFetch<DashboardStats>(`${API_BASE_URL}/admin/stats/`);
+  },
+  
+  getRecentBookings: async (limit = 10): Promise<PaginatedResponse<Booking>> => {
+    return apiFetch<PaginatedResponse<Booking>>(`${API_BASE_URL}/admin/bookings/?ordering=-created_at&page_size=${limit}`);
   },
 };
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────
 export const bookingsApi = {
   getAll: async (filters: BookingFilters = {}): Promise<PaginatedResponse<Booking>> => {
-    await delay(350);
-    let result = [...bookings];
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.field_id) params.append('field', filters.field_id);
+    if (filters.date_from) params.append('date_from', filters.date_from);
+    if (filters.date_to) params.append('date_to', filters.date_to);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.page) params.append('page', String(filters.page));
+    if (filters.ordering) params.append('ordering', filters.ordering);
 
-    if (filters.status) result = result.filter((b) => b.status === filters.status);
-    if (filters.field_id) result = result.filter((b) => b.field.id === Number(filters.field_id));
-    if (filters.date_from) result = result.filter((b) => b.date >= filters.date_from!);
-    if (filters.date_to) result = result.filter((b) => b.date <= filters.date_to!);
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      result = result.filter(
-        (b) =>
-          b.user.name.toLowerCase().includes(q) ||
-          b.user.phone.includes(q)
-      );
-    }
-
-    // Ordering
-    const ord = filters.ordering || '-created_at';
-    const desc = ord.startsWith('-');
-    const key = ord.replace('-', '') as keyof Booking;
-    result.sort((a, b) => {
-      const av = a[key] ?? '';
-      const bv = b[key] ?? '';
-      return desc ? (av < bv ? 1 : -1) : (av > bv ? 1 : -1);
-    });
-
-    return paginate(result, filters.page || 1, 20);
+    const url = `${API_BASE_URL}/admin/bookings/${params.toString() ? '?' + params.toString() : ''}`;
+    return apiFetch<PaginatedResponse<Booking>>(url);
   },
 
   getById: async (id: number): Promise<Booking> => {
-    await delay(200);
-    const b = bookings.find((b) => b.id === id);
-    if (!b) throw new Error('Bron topilmadi');
-    return { ...b };
+    return apiFetch<Booking>(`${API_BASE_URL}/admin/bookings/${id}/`);
   },
 
   confirm: async (id: number): Promise<Booking> => {
-    await delay(300);
-    const idx = bookings.findIndex((b) => b.id === id);
-    if (idx === -1) throw new Error('Bron topilmadi');
-    bookings[idx] = {
-      ...bookings[idx],
-      status: 'confirmed',
-      status_history: [
-        ...(bookings[idx].status_history || []),
-        { status: 'confirmed', changed_at: new Date().toISOString(), changed_by: adminProfile.name },
-      ],
-    };
-    _addNotif(`${bookings[idx].user.name} bronini tasdiqlandi`, bookings[idx].id);
-    return { ...bookings[idx] };
+    return apiFetch<Booking>(`${API_BASE_URL}/admin/bookings/${id}/confirm/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+    });
   },
 
-  reject: async (id: number, reason: string): Promise<Booking> => {
-    await delay(300);
-    const idx = bookings.findIndex((b) => b.id === id);
-    if (idx === -1) throw new Error('Bron topilmadi');
-    bookings[idx] = {
-      ...bookings[idx],
-      status: 'rejected',
-      reject_reason: reason,
-      status_history: [
-        ...(bookings[idx].status_history || []),
-        { status: 'rejected', changed_at: new Date().toISOString(), changed_by: adminProfile.name, note: reason },
-      ],
-    };
-    return { ...bookings[idx] };
+  reject: async (id: number, reason?: string): Promise<Booking> => {
+    return apiFetch<Booking>(`${API_BASE_URL}/admin/bookings/${id}/reject/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: reason ? JSON.stringify({ reason }) : undefined,
+    });
   },
 
   cancel: async (id: number): Promise<Booking> => {
-    await delay(300);
-    const idx = bookings.findIndex((b) => b.id === id);
-    if (idx === -1) throw new Error('Bron topilmadi');
-    bookings[idx] = {
-      ...bookings[idx],
-      status: 'cancelled',
-      status_history: [
-        ...(bookings[idx].status_history || []),
-        { status: 'cancelled', changed_at: new Date().toISOString() },
-      ],
-    };
-    return { ...bookings[idx] };
+    return apiFetch<Booking>(`${API_BASE_URL}/admin/bookings/${id}/cancel/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
   },
 
   exportCsv: async (): Promise<Response> => {
-    await delay(400);
-    const header = 'ID,Foydalanuvchi,Telefon,Maydon,Sana,Boshlanish,Tugash,Narx,Holat\n';
-    const rows = bookings.map((b) =>
-      `${b.id},"${b.user.name}","${b.user.phone}","${b.field.name}","${b.date}","${b.start_time}","${b.end_time}","${b.total_price}","${b.status}"`
-    ).join('\n');
-    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
-    return new Response(blob);
+    const token = getToken();
+    const res = await fetch(`${API_BASE_URL}/admin/bookings/export/`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Export xatoligi');
+    return res;
   },
 
   createManual: async (data: ManualBookingRequest): Promise<Booking> => {
-    const res = await apiFetch<unknown>(`${API_BASE_URL}/admin/bookings/manual/`, {
+    return apiFetch<Booking>(`${API_BASE_URL}/admin/bookings/manual/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    return res as Booking;
   },
 };
 
@@ -487,7 +406,6 @@ export const fieldsApi = {
     });
   },
 
-  // Images
   uploadImage: async (fieldId: number, formData: FormData): Promise<{ id: number; image: string; order: number }> => {
     const res = await fetch(`${API_BASE_URL}/admin/fields/${fieldId}/images/`, {
       method: 'POST',
@@ -516,7 +434,6 @@ export const fieldsApi = {
     });
   },
 
-  // Amenities
   addAmenity: async (fieldId: number, data: Partial<Amenity>): Promise<Amenity> => {
     const res = await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/${fieldId}/amenities/`, {
       method: 'POST',
@@ -539,30 +456,24 @@ export const fieldsApi = {
 };
 
 // ─── Notifications ────────────────────────────────────────────────────────────
-function _addNotif(message: string, bookingId?: number) {
-  notifications.unshift({
-    id: nextNotifId++,
-    message,
-    booking_id: bookingId,
-    is_read: false,
-    created_at: new Date().toISOString(),
-  });
-}
-
 export const notificationsApi = {
   getAll: async (): Promise<Notification[]> => {
-    await delay(200);
-    return [...notifications];
+    const data = await apiFetch<PaginatedResponse<Notification>>(`${API_BASE_URL}/admin/notifications/`);
+    return data.results || [];
   },
 
   markAllRead: async (): Promise<void> => {
-    await delay(200);
-    notifications = notifications.map((n) => ({ ...n, is_read: true }));
+    await apiFetch<unknown>(`${API_BASE_URL}/admin/notifications/mark-all-read/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
   },
 
   markRead: async (id: number): Promise<void> => {
-    await delay(150);
-    notifications = notifications.map((n) => n.id === id ? { ...n, is_read: true } : n);
+    await apiFetch<unknown>(`${API_BASE_URL}/admin/notifications/${id}/mark-read/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
   },
 };
 
@@ -619,34 +530,31 @@ export const settingsApi = {
 // ─── Push Notifications ───────────────────────────────────────────────────────
 export const pushApi = {
   subscribe: async (data: PushSubscriptionRequest): Promise<PushSubscriptionResponse> => {
-    await delay(300);
-    // Mock: return dummy subscription data
-    const sub = data.subscription as unknown as { keys?: { p256dh?: string; auth?: string } };
-    return {
-      id: Math.floor(Math.random() * 10000),
-      endpoint: data.subscription.endpoint,
-      keys: {
-        p256dh: sub.keys?.p256dh || '',
-        auth: sub.keys?.auth || '',
-      },
-      createdAt: new Date().toISOString(),
-    };
+    return apiFetch<PushSubscriptionResponse>(`${API_BASE_URL}/push/subscribe/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
   },
 
   unsubscribe: async (endpoint: string): Promise<void> => {
-    await delay(200);
-    // Mock: no-op
-    void endpoint; // Mark as intentionally unused
+    await apiFetch<unknown>(`${API_BASE_URL}/push/unsubscribe/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint }),
+    });
   },
 
   sendTestNotification: async (payload: PushTestRequest): Promise<PushTestResponse> => {
-    await delay(300);
-    void payload; // Mark as intentionally unused
-    return { success: true, message: 'Test bildirishnoma yuborildi' };
+    return apiFetch<PushTestResponse>(`${API_BASE_URL}/push/test/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
   },
 
   getSubscriptions: async (): Promise<PushSubscriptionResponse[]> => {
-    await delay(200);
-    return [];
+    const data = await apiFetch<PaginatedResponse<PushSubscriptionResponse>>(`${API_BASE_URL}/push/subscriptions/`);
+    return data.results || [];
   },
 };
