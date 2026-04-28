@@ -3,6 +3,7 @@ import type {
   Booking,
   BookingFilters,
   Field,
+  FieldImage,
   Notification,
   AdminProfile,
   PaginatedResponse,
