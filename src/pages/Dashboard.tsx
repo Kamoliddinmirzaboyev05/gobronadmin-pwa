@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CalendarDays, Wallet, CheckCircle, XCircle, MapPin, TrendingUp, ChevronRight, Plus } from 'lucide-react';
+import { Bell, CalendarDays, Wallet, CheckCircle, XCircle, MapPin, TrendingUp, ChevronRight, Plus, Download } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -32,6 +32,58 @@ export default function Dashboard() {
   const { unreadCount } = useNotifications();
   const { showToast } = useToast();
   const navigate = useNavigate();
+
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Ilova allaqachon o'rnatilganligini tekshirish
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log('[PWA] BeforeInstallPromptEvent fired in Dashboard');
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      console.log('[PWA] App installed successfully');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (isInstalled) {
+      showToast('Ilova allaqachon o\'rnatilgan', 'info');
+      return;
+    }
+
+    if (!deferredPrompt) {
+      showToast('Brauzer PWA o\'rnatishni qo\'llab-quvvatlamaydi yoki ilova allaqachon o\'rnatilgan', 'warning');
+      return;
+    }
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`[PWA] User response to the install prompt: ${outcome}`);
+
+    if (outcome === 'accepted') {
+      showToast('Ilova o\'rnatilmoqda...', 'info');
+    }
+
+    setDeferredPrompt(null);
+  };
 
   const today = new Date();
   const dateStr = today.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' });
@@ -136,17 +188,28 @@ export default function Dashboard() {
             <p className="text-xs text-gray-400">Bugun, {dateStr}</p>
           </div>
         </div>
-        <button
-          onClick={() => setIsNotificationModalOpen(true)}
-          className="relative w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
-        >
-          <Bell size={18} className="text-gray-600" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* PWA yuklab olish tugmasi (faqat o'rnatish mumkin bo'lganda va o'rnatilmagan bo'lsa chiqadi) */}
+          
+            <button
+              onClick={handleInstallClick}
+              className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm transition-all animate-bounce active:scale-95 border border-emerald-100"
+              title="Ilovani o'rnatish"
+            >
+              <Download size={18} strokeWidth={2.5} />
+            </button>
+          
+          <button
+            onClick={() => setIsNotificationModalOpen(true)}
+            className="relative w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
+          >
+            <Bell size={18} className="text-gray-600" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+            )}
+          </button>
+        </div>
       </div>
-
       <div className="px-4 space-y-4">
         {/* Top 2 big stat cards */}
         <div className="grid grid-cols-2 gap-3">

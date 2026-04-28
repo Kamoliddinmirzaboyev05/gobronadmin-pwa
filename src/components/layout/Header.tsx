@@ -111,20 +111,16 @@ export default function Header({ title, onMenuClick }: Props) {
       {/* Right: notifications + profile */}
       <div className="flex items-center gap-2">
         {/* PWA Install Button */}
-        <button
-          onClick={handleInstallClick}
-          className={`p-2 rounded-xl bg-red-500 transition-all ${
-            isInstalled
-              ? 'text-gray-400 cursor-default'
-              : deferredPrompt 
-                ? 'text-emerald-600 hover:bg-emerald-50 active:scale-95 shadow-sm' 
-                : 'text-gray-500 hover:bg-gray-100 active:scale-95'
-          }`}
-          title={isInstalled ? "Ilova o'rnatilgan" : "Ilovani o'rnatish"}
-        >
-          <Download size={20} />
-        </button>
-
+        {(
+          <button
+            onClick={handleInstallClick}
+            className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm transition-all animate-bounce active:scale-95 border border-emerald-100"
+            title="Ilovani o'rnatish"
+          >
+            <Download size={18} strokeWidth={2.5} />
+          </button>
+        )}
+        
         {/* Notifications */}
         <div className="relative" ref={notifsRef}>
           <button
