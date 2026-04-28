@@ -1,19 +1,8 @@
 /**
- * VAPID Public Key — bu faqat frontend uchun (xavfsiz, oshkor qilsa bo'ladi).
- *
- * Real loyihada generatsiya qilish:
- *   npm install -g web-push
- *   web-push generate-vapid-keys
- *
- * Keyin:
- *   VAPID_PUBLIC_KEY  → shu yerga
- *   VAPID_PRIVATE_KEY → faqat backend .env ga (hech qachon frontendga qo'yma!)
+ * Push bildirishnomalar uchun konfiguratsiya.
+ * VAPID_PUBLIC_KEY ni backenddan olishingiz kerak.
+ * Bu yerda vaqtinchalik kalit ko'rsatilgan.
  */
-export const VAPID_PUBLIC_KEY =
-  'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
-
-/**
- * Push xabar yuborish uchun backend endpoint.
- * Mock rejimda bu ishlamaydi — real backendga ulanganda o'zgartir.
- */
-export const PUSH_API_BASE = 'http://localhost:8000/api/admin';
+export const PUSH_CONFIG = {
+  VAPID_PUBLIC_KEY: 'BI86v-H6u4Y5q5f6H9p1q-placeholder-key-for-development-only-use-real-one-in-production-1234567890'
+};

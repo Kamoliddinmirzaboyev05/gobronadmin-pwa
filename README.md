@@ -8,7 +8,6 @@ Admin panel for GoBron football field booking system with real-time API integrat
 - 📅 Complete booking management (view, confirm, reject, cancel)
 - ➕ Manual booking creation
 - ⚽ Field management with images and amenities
-- 🔔 Push notifications (PWA)
 - 📱 Mobile-first responsive design
 - 🎨 Modern UI with Tailwind CSS
 - 🔐 JWT authentication with auto-refresh
@@ -21,7 +20,6 @@ Admin panel for GoBron football field booking system with real-time API integrat
 - Tailwind CSS
 - React Router
 - Chart.js
-- PWA Support
 - REST API Integration
 
 ## API Integration

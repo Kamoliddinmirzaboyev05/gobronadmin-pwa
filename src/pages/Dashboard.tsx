@@ -103,22 +103,67 @@ export default function Dashboard() {
   const today = new Date();
   const dateStr = today.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' });
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
+      const today = new Date().toISOString().split('T')[0];
       const [statsData, bookingsData] = await Promise.all([
         dashboardApi.getStats(),
-        dashboardApi.getRecentBookings(10),
+        bookingsApi.getAll({ 
+          date_from: today, 
+          ordering: 'date,start_time',
+          page_size: 50 // Use a larger page size to ensure we get enough data
+        } as any),
       ]);
+      
+      // Also fetch pending bookings regardless of date (they might be in the past but still need action)
+      const pendingData = await bookingsApi.getAll({ status: 'pending' });
+
       setStats(statsData);
-      setRecentBookings(bookingsData.results);
+      
+      // Combine and deduplicate
+      const combined = [...pendingData.results, ...bookingsData.results];
+      const unique = Array.from(new Map(combined.map(b => [b.id, b])).values());
+      
+      setRecentBookings(unique);
     } catch {
-      showToast('Xatolik yuz berdi', 'error');
+      if (!silent) showToast('Xatolik yuz berdi', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [showToast]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { 
+    load(); 
+    // Real-time polling: every 30 seconds
+    const interval = setInterval(() => load(true), 30000);
+    return () => clearInterval(interval);
+  }, [load]);
+
+  // Filter bookings: Pending first, then next 3 upcoming confirmed
+  const filteredBookings = (() => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    
+    // 1. Pending bookings
+    const pending = recentBookings.filter(b => b.status === 'pending');
+    
+    // 2. Upcoming confirmed bookings for today/future
+    const upcomingConfirmed = recentBookings
+      .filter(b => b.status === 'confirmed')
+      .filter(b => {
+        const bookingDateTime = new Date(`${b.date}T${b.start_time}`);
+        return bookingDateTime > now;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.start_time}`).getTime();
+        const dateB = new Date(`${b.date}T${b.start_time}`).getTime();
+        return dateA - dateB;
+      })
+      .slice(0, 3);
+
+    return [...pending, ...upcomingConfirmed];
+  })();
 
   const handleConfirm = async (bookingId: number) => {
     setActionLoading(bookingId);
@@ -281,34 +326,38 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent bookings - So'rovlar */}
+        {/* Upcoming bookings & Requests */}
         <div className="card overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
-            <p className="font-semibold text-gray-800 text-sm">So'rovlar</p>
+            <p className="font-semibold text-gray-800 text-sm">Navbatdagi va so'rovlar</p>
             <button
-              onClick={() => navigate('/bookings?status=pending')}
+              onClick={() => navigate('/bookings')}
               className="flex items-center gap-1 text-xs text-emerald-500 font-semibold"
             >
               Hammasi <ChevronRight size={14} />
             </button>
           </div>
 
-          {(!recentBookings || recentBookings.length === 0) ? (
+          {(!filteredBookings || filteredBookings.length === 0) ? (
             <div className="py-10 flex flex-col items-center gap-2 text-gray-400">
               <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                 <CalendarDays size={24} className="text-gray-300" />
               </div>
-              <p className="text-sm">So'rovlar yo'q</p>
+              <p className="text-sm">Hozircha bandliklar yo'q</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {recentBookings.slice(0, 5).map((b) => (
+              {filteredBookings.map((b) => (
                 <div
                   key={b.id}
-                  className="px-4 py-3 hover:bg-gray-50 transition-colors"
+                  className={`px-4 py-3 transition-colors ${b.status === 'pending' ? 'bg-amber-50/30' : 'hover:bg-gray-50'}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                      b.status === 'pending' 
+                        ? 'bg-gradient-to-br from-amber-400 to-amber-600' 
+                        : 'bg-gradient-to-br from-emerald-400 to-emerald-600'
+                    }`}>
                       <span className="text-sm font-bold text-white">
                         {b.client_name?.charAt(0)?.toUpperCase() || '?'}
                       </span>
@@ -322,9 +371,11 @@ export default function Dashboard() {
                         <StatusBadge status={b.status} />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-                        <span>{formatDate(b.date)}</span>
+                        <span className={new Date(`${b.date}T${b.start_time}`).toDateString() === new Date().toDateString() ? 'text-emerald-600 font-medium' : ''}>
+                          {new Date(`${b.date}T${b.start_time}`).toDateString() === new Date().toDateString() ? 'Bugun' : formatDate(b.date)}
+                        </span>
                         <span>•</span>
-                        <span>{b.start_time.slice(0, 5)}–{b.end_time.slice(0, 5)}</span>
+                        <span className="font-bold text-gray-700">{b.start_time.slice(0, 5)}–{b.end_time.slice(0, 5)}</span>
                         <span>•</span>
                         <span className="font-semibold text-emerald-600">{formatCurrency(Number(b.total_price))}</span>
                       </div>
@@ -367,9 +418,9 @@ export default function Dashboard() {
                       {b.status !== 'pending' && (
                         <button
                           onClick={() => setSelectedBooking(b)}
-                          className="text-xs text-emerald-500 font-medium hover:underline"
+                          className="text-xs text-emerald-500 font-medium hover:underline flex items-center gap-1"
                         >
-                          Batafsil ko'rish
+                          Batafsil ko'rish <ChevronRight size={12} />
                         </button>
                       )}
                     </div>

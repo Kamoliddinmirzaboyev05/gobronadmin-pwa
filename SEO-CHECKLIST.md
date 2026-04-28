@@ -46,17 +46,6 @@
 - ✅ Mobile-first design
 - ✅ Responsive layout
 - ✅ Fast loading
-- ✅ PWA ready
-
-### PWA Manifest
-- ✅ Complete manifest.json
-- ✅ App name & description
-- ✅ Icons (192x192, 512x512)
-- ✅ Theme color
-- ✅ Start URL
-- ✅ Display mode
-- ✅ Shortcuts
-- ✅ Screenshots metadata
 
 ### Security
 - ✅ HTTPS ready
@@ -78,12 +67,7 @@
 ### Images
 - ⏳ favicon-16x16.png
 - ⏳ favicon-32x32.png
-- ⏳ icon-192.png
-- ⏳ icon-512.png
-- ⏳ apple-touch-icon.png
 - ⏳ og-image.png (1200x630px)
-- ⏳ screenshot-mobile.png
-- ⏳ screenshot-desktop.png
 
 **Action Required:**
 1. Create logo/icon design

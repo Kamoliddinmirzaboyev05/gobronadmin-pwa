@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, ChevronDown, Download } from 'lucide-react';
+import { Menu, Bell, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { timeAgo } from '../../utils';
@@ -11,21 +11,11 @@ interface Props {
   onMenuClick: () => void;
 }
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
 export default function Header({ title, onMenuClick }: Props) {
   const { admin, logout } = useAuth();
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(() => {
-    // Check if app is already installed on mount
-    return window.matchMedia('(display-mode: standalone)').matches;
-  });
   const notifsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -41,51 +31,12 @@ export default function Header({ title, onMenuClick }: Props) {
       }
     };
 
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      console.log('[PWA] BeforeInstallPromptEvent fired');
-    };
-
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
-      showToast('Ilova muvaffaqiyatli o\'rnatildi!', 'success');
-      console.log('[PWA] App installed successfully');
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
     document.addEventListener('mousedown', handler);
     
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
       document.removeEventListener('mousedown', handler);
     };
-  }, [showToast]);
-
-  const handleInstallClick = async () => {
-    if (isInstalled) {
-      showToast('Ilova allaqachon o\'rnatilgan', 'info');
-      return;
-    }
-
-    if (!deferredPrompt) {
-      showToast('Brauzer PWA o\'rnatishni qo\'llab-quvvatlamaydi', 'warning');
-      return;
-    }
-    
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`[PWA] User response to the install prompt: ${outcome}`);
-    
-    if (outcome === 'accepted') {
-      showToast('Ilova o\'rnatilmoqda...', 'info');
-    }
-    
-    setDeferredPrompt(null);
-  };
+  }, []);
 
   const handleNotifClick = async (notif: typeof notifications[0]) => {
     await markRead(notif.id);
@@ -110,17 +61,6 @@ export default function Header({ title, onMenuClick }: Props) {
 
       {/* Right: notifications + profile */}
       <div className="flex items-center gap-2">
-        {/* PWA Install Button */}
-        {(
-          <button
-            onClick={handleInstallClick}
-            className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm transition-all animate-bounce active:scale-95 border border-emerald-100"
-            title="Ilovani o'rnatish"
-          >
-            <Download size={18} strokeWidth={2.5} />
-          </button>
-        )}
-        
         {/* Notifications */}
         <div className="relative" ref={notifsRef}>
           <button

@@ -53,11 +53,14 @@ export interface Slot {
 }
 
 export interface ManualBookingRequest {
-  field_id: number;
-  date: string;
-  slot_ids: number[];
-  user_name: string;
-  user_phone: string;
+  slot_id?: number; // Single slot support based on Swagger
+  slot_ids?: number[]; // Keep for backward compatibility if needed
+  guest_full_name: string;
+  guest_phone: string;
+  field_id?: number;
+  date?: string;
+  plan?: number;
+  note?: string;
 }
 
 export interface Booking {
