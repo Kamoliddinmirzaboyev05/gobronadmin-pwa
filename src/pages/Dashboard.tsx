@@ -35,23 +35,28 @@ export default function Dashboard() {
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+    // iOS qurilmasini tekshirish
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(isIOSDevice);
+
     // Ilova allaqachon o'rnatilganligini tekshirish
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
       setIsInstalled(true);
     }
 
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      console.log('[PWA] BeforeInstallPromptEvent fired in Dashboard');
+      console.log('[PWA] BeforeInstallPromptEvent fired');
     };
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
-      console.log('[PWA] App installed successfully');
+      showToast('Ilova muvaffaqiyatli o\'rnatildi!', 'success');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -61,7 +66,7 @@ export default function Dashboard() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [showToast]);
 
   const handleInstallClick = async () => {
     if (isInstalled) {
@@ -69,20 +74,30 @@ export default function Dashboard() {
       return;
     }
 
-    if (!deferredPrompt) {
-      showToast('Brauzer PWA o\'rnatishni qo\'llab-quvvatlamaydi yoki ilova allaqachon o\'rnatilgan', 'warning');
+    if (isIOS) {
+      showToast('iOS uchun: Safari menyusidan "Ekraningizga qo\'shish" (Add to Home Screen) tugmasini bosing', 'info');
       return;
     }
 
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`[PWA] User response to the install prompt: ${outcome}`);
-
-    if (outcome === 'accepted') {
-      showToast('Ilova o\'rnatilmoqda...', 'info');
+    if (!deferredPrompt) {
+      // Agar prompt yo'q bo'lsa, lekin foydalanuvchi bosgan bo'lsa, demak brauzer hali ruxsat bermagan
+      showToast('O\'rnatish imkoniyati mavjud emas. Sahifani yangilang yoki brauzer sozlamalarini tekshiring.', 'warning');
+      return;
     }
 
-    setDeferredPrompt(null);
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`[PWA] User response: ${outcome}`);
+      
+      if (outcome === 'accepted') {
+        showToast('O\'rnatish boshlandi...', 'success');
+      }
+      setDeferredPrompt(null);
+    } catch (err) {
+      console.error('[PWA] Error during installation:', err);
+      showToast('O\'rnatishda xatolik yuz berdi', 'error');
+    }
   };
 
   const today = new Date();
@@ -189,8 +204,8 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* PWA yuklab olish tugmasi (faqat o'rnatish mumkin bo'lganda va o'rnatilmagan bo'lsa chiqadi) */}
-          
+          {/* PWA yuklab olish tugmasi (iOS yoki Androidda o'rnatish mumkin bo'lganda chiqadi) */}
+          {!isInstalled && (deferredPrompt || isIOS) && (
             <button
               onClick={handleInstallClick}
               className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm transition-all animate-bounce active:scale-95 border border-emerald-100"
@@ -198,7 +213,7 @@ export default function Dashboard() {
             >
               <Download size={18} strokeWidth={2.5} />
             </button>
-          
+          )}
           <button
             onClick={() => setIsNotificationModalOpen(true)}
             className="relative w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
