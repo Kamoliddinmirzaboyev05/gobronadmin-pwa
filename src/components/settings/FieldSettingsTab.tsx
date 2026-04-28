@@ -80,36 +80,36 @@ export default function FieldSettingsTab({ field, onSaved, onDirty }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
             Maydon nomi <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={form.name}
             onChange={(e) => handleChange('name', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
           />
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Tavsif</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tavsif</label>
           <textarea
             value={form.description}
             onChange={(e) => handleChange('description', e.target.value)}
             rows={3}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 resize-none"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 resize-none"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Shahar</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Shahar</label>
           <select
             value={form.city}
             onChange={(e) => handleChange('city', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 bg-white"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 bg-white"
           >
             {CITIES.map((c) => (
               <option key={c} value={c}>{c}</option>
@@ -118,17 +118,17 @@ export default function FieldSettingsTab({ field, onSaved, onDirty }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Manzil</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Manzil</label>
           <input
             type="text"
             value={form.address}
             onChange={(e) => handleChange('address', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
             Narx (so'm/soat)
           </label>
           <div className="relative">
@@ -138,61 +138,61 @@ export default function FieldSettingsTab({ field, onSaved, onDirty }: Props) {
               onChange={(e) => handleChange('price_per_hour', Number(e.target.value))}
               min={0}
               step={1000}
-              className="w-full px-3 py-2.5 pr-16 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+              className="w-full px-3 py-2.5 pr-16 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">so'm</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">so'm</span>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Holat</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Holat</label>
           <div className="flex items-center gap-3 py-2.5">
             <button
               type="button"
               onClick={() => handleChange('is_active', !form.is_active)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                form.is_active ? 'bg-green-500' : 'bg-gray-300'
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                form.is_active ? 'bg-emerald-500' : 'bg-gray-300'
               }`}
             >
               <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                form.is_active ? 'translate-x-6' : 'translate-x-0.5'
+                form.is_active ? 'translate-x-5' : 'translate-x-0.5'
               }`} />
             </button>
-            <span className={`text-sm font-medium ${form.is_active ? 'text-green-600' : 'text-gray-500'}`}>
+            <span className={`text-sm font-semibold ${form.is_active ? 'text-emerald-600' : 'text-gray-500'}`}>
               {form.is_active ? 'Faol' : 'Nofaol'}
             </span>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Ochilish vaqti</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Ochilish vaqti</label>
           <input
             type="time"
             value={form.opening_time}
             onChange={(e) => handleChange('opening_time', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Yopilish vaqti</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Yopilish vaqti</label>
           <input
             type="time"
             value={form.closing_time}
             onChange={(e) => handleChange('closing_time', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
           />
         </div>
       </div>
 
       {/* Slot preview */}
-      <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
-        <p className="text-sm font-semibold text-orange-700 mb-2">
+      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+        <p className="text-sm font-semibold text-emerald-800 mb-2">
           Slot ko'rinishi: {form.opening_time} — {form.closing_time}: <strong>{slots.length} ta slot</strong>
         </p>
         <div className="flex flex-wrap gap-1.5">
           {slots.map((slot) => (
-            <span key={slot} className="text-xs bg-white text-orange-600 border border-orange-200 px-2.5 py-1 rounded-full">
+            <span key={slot} className="text-xs bg-white text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-md font-medium">
               {slot}
             </span>
           ))}
@@ -203,9 +203,9 @@ export default function FieldSettingsTab({ field, onSaved, onDirty }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-60 shadow-sm shadow-orange-200"
+          className="px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-60 shadow-sm"
         >
-          {loading && <LoadingSpinner size={15} />}
+          {loading && <LoadingSpinner size={16} />}
           Saqlash
         </button>
       </div>

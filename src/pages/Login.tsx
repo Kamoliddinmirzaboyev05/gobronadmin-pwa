@@ -6,8 +6,8 @@ import { useToast } from '../context/ToastContext';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 
 export default function Login() {
-  const [username, setUsername] = useState('mirzaboyev');
-  const [password, setPassword] = useState('kamoliddin');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated } = useAuth();
@@ -52,9 +52,9 @@ export default function Login() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="mirzaboyev"
+              placeholder="Foydalanuvchi nomini kiriting"
               className="w-full px-4 py-3.5 rounded-2xl bg-white/10 border border-white/10 text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-              autoComplete="username"
+              autoComplete="off"
             />
           </div>
           <div>
@@ -66,7 +66,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full px-4 py-3.5 pr-12 rounded-2xl bg-white/10 border border-white/10 text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                autoComplete="current-password"
+                autoComplete="off"
               />
               <button
                 type="button"

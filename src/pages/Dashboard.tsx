@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, LogOut, CalendarDays, Wallet, CheckCircle, XCircle, MapPin, TrendingUp, ChevronRight, Plus } from 'lucide-react';
+import { Bell, CalendarDays, Wallet, CheckCircle, XCircle, MapPin, TrendingUp, ChevronRight, Plus, Download } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -17,6 +17,12 @@ import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useToast } from '../context/ToastContext';
 
+// PWA Install Prompt Event type
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
 export default function Dashboard() {
@@ -24,13 +30,54 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const { admin, logout } = useAuth();
+  const { admin } = useAuth();
   const { unreadCount } = useNotifications();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
   const today = new Date();
   const dateStr = today.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' });
+
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Ilova allaqachon o'rnatilganligini tekshirish
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log('[PWA] BeforeInstallPromptEvent fired in Dashboard');
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      console.log('[PWA] App installed successfully');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      showToast('Ilova allaqachon o\'rnatilgan yoki brauzer PWA ni qo\'llab-quvvatlamaydi', 'info');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`[PWA] User response to the install prompt: ${outcome}`);
+    setDeferredPrompt(null);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -103,20 +150,24 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* PWA yuklab olish tugmasi (faqat o'rnatish mumkin bo'lganda va o'rnatilmagan bo'lsa chiqadi) */}
+          {!isInstalled && deferredPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm transition-all animate-bounce active:scale-90 border border-emerald-100"
+              title="Ilovani o'rnatish"
+            >
+              <Download size={18} strokeWidth={2.5} />
+            </button>
+          )}
           <button
             onClick={() => navigate('/bookings')}
-            className="relative w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm"
+            className="relative w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
           >
             <Bell size={18} className="text-gray-600" />
             {unreadCount > 0 && (
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
             )}
-          </button>
-          <button
-            onClick={() => { logout(); navigate('/login'); }}
-            className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm"
-          >
-            <LogOut size={18} className="text-gray-500" />
           </button>
         </div>
       </div>

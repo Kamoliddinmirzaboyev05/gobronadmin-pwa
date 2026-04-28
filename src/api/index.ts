@@ -16,16 +16,15 @@ import type {
 } from '../types';
 import {
   mockAdmin,
-  mockFields as _mockFields,
   mockBookings as _mockBookings,
   mockNotifications as _mockNotifications,
   mockDashboardStats,
 } from './mockData';
 
 // ─── In-memory store ──────────────────────────────────────────────────────────
-let bookings: Booking[] = JSON.parse(JSON.stringify(_mockBookings));
+const bookings: Booking[] = JSON.parse(JSON.stringify(_mockBookings));
+const adminProfile: AdminProfile = { ...mockAdmin };
 let notifications: Notification[] = JSON.parse(JSON.stringify(_mockNotifications));
-let adminProfile: AdminProfile = { ...mockAdmin };
 let nextNotifId = 50;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -43,8 +42,31 @@ function paginate<T>(items: T[], page = 1, pageSize = 20): PaginatedResponse<T> 
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://103.6.169.242/api';
 
+// Token'ni saqlash (faqat localStorage)
+function saveToken(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    console.error(`Failed to save ${key}:`, error);
+  }
+}
+
+// Token'ni olish
 function getToken() {
-  return localStorage.getItem('admin_token');
+  try {
+    return localStorage.getItem('admin_token');
+  } catch {
+    return null;
+  }
+}
+
+// Token'ni o'chirish
+function removeToken(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.error(`Failed to remove ${key}:`, error);
+  }
 }
 
 function authHeader(): Record<string, string> {
@@ -53,14 +75,35 @@ function authHeader(): Record<string, string> {
 }
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      Accept: 'application/json',
-      ...authHeader(),
-      ...(options?.headers || {}),
-    },
-  });
+  const token = getToken();
+  
+  const makeRequest = async (tokenToUse: string | null) => {
+    return fetch(url, {
+      ...options,
+      headers: {
+        Accept: 'application/json',
+        ...(tokenToUse ? { Authorization: `Bearer ${tokenToUse}` } : {}),
+        ...(options?.headers || {}),
+      },
+    });
+  };
+
+  let res = await makeRequest(token);
+
+  // Agar 401 (Unauthorized) bo'lsa va refresh tokenimiz bo'lsa, tokenni yangilashga harakat qilamiz
+  if (res.status === 401 && localStorage.getItem('admin_refresh')) {
+    console.log('[API] Unauthorized (401), attempting token refresh...');
+    try {
+      const newAccessToken = await authApi.refreshToken();
+      console.log('[API] Token refreshed successfully, retrying request...');
+      res = await makeRequest(newAccessToken);
+    } catch (refreshError: unknown) {
+      console.error('[API] Token refresh failed during request:', refreshError);
+      // Refresh ham o'xshamadi - xatoni qaytaramiz
+      // Tokenlarni o'chirish refreshToken funksiyasining ichida bajariladi (agar 401/400 bo'lsa)
+      throw refreshError;
+    }
+  }
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
@@ -97,8 +140,13 @@ export const authApi = {
       avatar: user.avatar_url || undefined,
     };
 
-    localStorage.setItem('admin_token', data.access);
-    if (data.refresh) localStorage.setItem('admin_refresh', data.refresh);
+    // localStorage'ga xavfsiz saqlash
+    saveToken('admin_token', data.access);
+    if (data.refresh) saveToken('admin_refresh', data.refresh);
+    if (import.meta.env.DEV) {
+      console.log('[API] Login tokens saved');
+    }
+    
     return { access: data.access, refresh: data.refresh, admin };
   },
 
@@ -128,8 +176,13 @@ export const authApi = {
       avatar: user.avatar_url || undefined,
     };
 
-    localStorage.setItem('admin_token', data.access);
-    if (data.refresh) localStorage.setItem('admin_refresh', data.refresh);
+    // localStorage'ga xavfsiz saqlash
+    saveToken('admin_token', data.access);
+    if (data.refresh) saveToken('admin_refresh', data.refresh);
+    if (import.meta.env.DEV) {
+      console.log('[API] Register tokens saved');
+    }
+    
     return { access: data.access, refresh: data.refresh, admin };
   },
 
@@ -137,29 +190,47 @@ export const authApi = {
     const refresh = localStorage.getItem('admin_refresh');
     if (!refresh) throw new Error('Refresh token mavjud emas');
 
-    const res = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ refresh }),
-    });
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ refresh }),
+      });
 
-    if (!res.ok) {
-      localStorage.removeItem('admin_token');
-      localStorage.removeItem('admin_refresh');
-      throw new Error('Sessiya tugadi');
+      if (res.status === 401 || res.status === 400) {
+        // Faqat token yaroqsiz bo'lgandagina o'chiramiz
+        removeToken('admin_token');
+        removeToken('admin_refresh');
+        throw new Error('Sessiya tugadi');
+      }
+
+      if (!res.ok) {
+        throw new Error(`Server xatosi: ${res.status}`);
+      }
+
+      const data = await res.json();
+      saveToken('admin_token', data.access);
+      if (data.refresh) {
+        saveToken('admin_refresh', data.refresh);
+      }
+      if (import.meta.env.DEV) {
+        console.log('[API] Token refreshed successfully');
+      }
+      return data.access;
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.error('[API] Refresh error:', err);
+      }
+      throw err;
     }
-
-    const data = await res.json();
-    localStorage.setItem('admin_token', data.access);
-    return data.access;
   },
 
   logout: async () => {
     const refresh = localStorage.getItem('admin_refresh');
-    const token = localStorage.getItem('admin_token');
+    const token = getToken();
     if (refresh && token) {
       await fetch(`${API_BASE_URL}/auth/logout/`, {
         method: 'POST',
@@ -170,8 +241,11 @@ export const authApi = {
         body: JSON.stringify({ refresh }),
       }).catch(() => {});
     }
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_refresh');
+    removeToken('admin_token');
+    removeToken('admin_refresh');
+    if (import.meta.env.DEV) {
+      console.log('[API] Logout tokens cleared');
+    }
   },
 };
 
@@ -289,7 +363,7 @@ export const bookingsApi = {
   },
 
   createManual: async (data: ManualBookingRequest): Promise<Booking> => {
-    const res = await apiFetch<any>(`${API_BASE_URL}/admin/bookings/manual/`, {
+    const res = await apiFetch<unknown>(`${API_BASE_URL}/admin/bookings/manual/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -299,39 +373,40 @@ export const bookingsApi = {
 };
 
 // ─── Fields ───────────────────────────────────────────────────────────────────
-function normalizeField(raw: any): Field {
+function normalizeField(raw: Record<string, unknown>): Field {
+  const r = raw as Record<string, string | number | boolean | null | undefined | unknown[]>;
   return {
-    id: raw.id,
-    name: raw.name || '',
-    description: raw.description || '',
-    address: raw.address || '',
-    city: raw.city || '',
-    price_per_hour: raw.price_per_hour ? Number(raw.price_per_hour) : 0,
-    opening_time: (raw.opening_time || '08:00').slice(0, 5),
-    closing_time: (raw.closing_time || '22:00').slice(0, 5),
-    is_active: raw.is_active ?? true,
-    cover_image: raw.cover_image_url || raw.cover_image || undefined,
-    cover_image_url: raw.cover_image_url || null,
-    images: raw.images || [],
-    amenities: raw.amenities || [],
-    created_at: raw.created_at,
-    updated_at: raw.updated_at,
-    location_url: raw.location_url || null,
-    phone: raw.phone || '',
-    advance_booking_days: raw.advance_booking_days ?? 1,
-    subscription_valid: raw.subscription_valid,
+    id: r.id as number,
+    name: (r.name as string) || '',
+    description: (r.description as string) || '',
+    address: (r.address as string) || '',
+    city: (r.city as string) || '',
+    price_per_hour: r.price_per_hour ? Number(r.price_per_hour) : 0,
+    opening_time: ((r.opening_time as string) || '08:00').slice(0, 5),
+    closing_time: ((r.closing_time as string) || '22:00').slice(0, 5),
+    is_active: (r.is_active as boolean) ?? true,
+    cover_image: (r.cover_image_url as string) || (r.cover_image as string) || undefined,
+    cover_image_url: (r.cover_image_url as string) || null,
+    images: (r.images || []) as FieldImage[],
+    amenities: (r.amenities || []) as Amenity[],
+    created_at: r.created_at as string,
+    updated_at: r.updated_at as string,
+    location_url: (r.location_url as string) || null,
+    phone: (r.phone as string) || '',
+    advance_booking_days: (r.advance_booking_days as number) ?? 1,
+    subscription_valid: r.subscription_valid as boolean,
   };
 }
 
 export const fieldsApi = {
   getAll: async (): Promise<Field[]> => {
-    const data = await apiFetch<PaginatedResponse<any>>(`${API_BASE_URL}/admin/fields/`);
-    return (data.results || []).map(normalizeField);
+    const data = await apiFetch<PaginatedResponse<unknown>>(`${API_BASE_URL}/admin/fields/`);
+    return (data.results || []).map((item) => normalizeField(item as Record<string, unknown>));
   },
 
   getById: async (id: number): Promise<Field> => {
-    const data = await apiFetch<any>(`${API_BASE_URL}/admin/fields/${id}/`);
-    return normalizeField(data);
+    const data = await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/${id}/`);
+    return normalizeField(data as Record<string, unknown>);
   },
 
   create: async (data: Partial<Field>): Promise<Field> => {
@@ -348,12 +423,12 @@ export const fieldsApi = {
       phone: data.phone || '',
       advance_booking_days: data.advance_booking_days ?? 1,
     };
-    const res = await apiFetch<any>(`${API_BASE_URL}/admin/fields/`, {
+    const res = await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    return normalizeField(res);
+    return normalizeField(res as Record<string, unknown>);
   },
 
   update: async (id: number, data: Partial<Field> | FormData): Promise<Field> => {
@@ -365,7 +440,7 @@ export const fieldsApi = {
         body: data,
       };
     } else {
-      const payload: Record<string, any> = {};
+      const payload: Record<string, unknown> = {};
       if (data.name !== undefined) payload.name = data.name;
       if (data.description !== undefined) payload.description = data.description;
       if (data.address !== undefined) payload.address = data.address;
@@ -385,8 +460,8 @@ export const fieldsApi = {
       };
     }
 
-    const res = await apiFetch<any>(`${API_BASE_URL}/admin/fields/${id}/`, options);
-    return normalizeField(res);
+    const res = await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/${id}/`, options);
+    return normalizeField(res as Record<string, unknown>);
   },
 
   toggleActive: async (id: number): Promise<Field> => {
@@ -395,7 +470,7 @@ export const fieldsApi = {
   },
 
   delete: async (id: number): Promise<void> => {
-    await apiFetch<any>(`${API_BASE_URL}/admin/fields/${id}/`, {
+    await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/${id}/`, {
       method: 'DELETE',
     });
   },
@@ -416,13 +491,13 @@ export const fieldsApi = {
   },
 
   deleteImage: async (fieldId: number, imageId: number): Promise<void> => {
-    await apiFetch<any>(`${API_BASE_URL}/admin/fields/${fieldId}/images/${imageId}/`, {
+    await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/${fieldId}/images/${imageId}/`, {
       method: 'DELETE',
     });
   },
 
   reorderImages: async (fieldId: number, order: number[]): Promise<void> => {
-    await apiFetch<any>(`${API_BASE_URL}/admin/fields/${fieldId}/images/reorder/`, {
+    await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/${fieldId}/images/reorder/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ order }),
@@ -431,16 +506,17 @@ export const fieldsApi = {
 
   // Amenities
   addAmenity: async (fieldId: number, data: Partial<Amenity>): Promise<Amenity> => {
-    const res = await apiFetch<any>(`${API_BASE_URL}/admin/fields/${fieldId}/amenities/`, {
+    const res = await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/${fieldId}/amenities/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    return { id: res.id, icon: res.icon || '⚽', name: res.name || '' };
+    const r = res as Record<string, unknown>;
+    return { id: r.id as number, icon: (r.icon as string) || '⚽', name: (r.name as string) || '' };
   },
 
   deleteAmenity: async (fieldId: number, amenityId: number): Promise<void> => {
-    await apiFetch<any>(`${API_BASE_URL}/admin/fields/${fieldId}/amenities/${amenityId}/`, {
+    await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/${fieldId}/amenities/${amenityId}/`, {
       method: 'DELETE',
     });
   },
@@ -479,47 +555,48 @@ export const notificationsApi = {
 };
 
 // ─── Settings / Profile ───────────────────────────────────────────────────────
-function normalizeProfile(raw: any): AdminProfile {
+function normalizeProfile(raw: Record<string, unknown>): AdminProfile {
+  const r = raw as Record<string, string | number | boolean | null | undefined>;
   return {
-    id: raw.id,
-    username: raw.username || '',
-    first_name: raw.first_name || '',
-    last_name: raw.last_name || '',
-    phone: raw.phone || raw.phone_number || undefined,
-    role: raw.role || undefined,
-    avatar_url: raw.avatar_url || null,
-    date_joined: raw.date_joined,
-    name: `${raw.first_name || ''} ${raw.last_name || ''}`.trim() || raw.username || '',
-    email: raw.email || raw.username || '',
-    avatar: raw.avatar_url || undefined,
-    email_notifications: raw.email_notifications ?? true,
+    id: r.id as number,
+    username: (r.username as string) || '',
+    first_name: (r.first_name as string) || '',
+    last_name: (r.last_name as string) || '',
+    phone: (r.phone as string) || (r.phone_number as string) || undefined,
+    role: (r.role as string) || undefined,
+    avatar_url: (r.avatar_url as string) || null,
+    date_joined: r.date_joined as string,
+    name: `${(r.first_name as string) || ''} ${(r.last_name as string) || ''}`.trim() || (r.username as string) || '',
+    email: (r.email as string) || (r.username as string) || '',
+    avatar: (r.avatar_url as string) || undefined,
+    email_notifications: (r.email_notifications as boolean) ?? true,
   };
 }
 
 export const settingsApi = {
   getProfile: async (): Promise<AdminProfile> => {
-    const data = await apiFetch<any>(`${API_BASE_URL}/auth/me/`);
-    return normalizeProfile(data);
+    const data = await apiFetch<unknown>(`${API_BASE_URL}/auth/me/`);
+    return normalizeProfile(data as Record<string, unknown>);
   },
 
   updateProfile: async (data: Partial<AdminProfile>): Promise<AdminProfile> => {
-    const payload: Record<string, any> = {};
+    const payload: Record<string, unknown> = {};
     if (data.first_name !== undefined) payload.first_name = data.first_name;
     if (data.last_name !== undefined) payload.last_name = data.last_name;
     if (data.phone !== undefined) payload.phone = data.phone;
     if (data.email !== undefined) payload.email = data.email;
     if (data.email_notifications !== undefined) payload.email_notifications = data.email_notifications;
 
-    const res = await apiFetch<any>(`${API_BASE_URL}/auth/me/`, {
+    const res = await apiFetch<unknown>(`${API_BASE_URL}/auth/me/`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    return normalizeProfile(res);
+    return normalizeProfile(res as Record<string, unknown>);
   },
 
   changePassword: async (old_password: string, new_password: string): Promise<void> => {
-    await apiFetch<any>(`${API_BASE_URL}/auth/password/change/`, {
+    await apiFetch<unknown>(`${API_BASE_URL}/auth/password/change/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ old_password, new_password }),
@@ -532,7 +609,7 @@ export const pushApi = {
   subscribe: async (data: PushSubscriptionRequest): Promise<PushSubscriptionResponse> => {
     await delay(300);
     // Mock: return dummy subscription data
-    const sub = data.subscription as any;
+    const sub = data.subscription as unknown as { keys?: { p256dh?: string; auth?: string } };
     return {
       id: Math.floor(Math.random() * 10000),
       endpoint: data.subscription.endpoint,
@@ -544,13 +621,15 @@ export const pushApi = {
     };
   },
 
-  unsubscribe: async (_endpoint: string): Promise<void> => {
+  unsubscribe: async (endpoint: string): Promise<void> => {
     await delay(200);
     // Mock: no-op
+    void endpoint; // Mark as intentionally unused
   },
 
-  sendTestNotification: async (_payload: PushTestRequest): Promise<PushTestResponse> => {
+  sendTestNotification: async (payload: PushTestRequest): Promise<PushTestResponse> => {
     await delay(300);
+    void payload; // Mark as intentionally unused
     return { success: true, message: 'Test bildirishnoma yuborildi' };
   },
 

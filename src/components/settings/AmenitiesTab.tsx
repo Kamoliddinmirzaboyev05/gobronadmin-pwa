@@ -75,10 +75,10 @@ export default function AmenitiesTab({ field, onUpdated }: Props) {
   };
 
   return (
-    <div className="space-y-6 max-w-xl">
+    <div className="space-y-5 max-w-xl">
       {/* Preset quick-add */}
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">Tez qo'shish</p>
+        <p className="text-sm font-semibold text-gray-700 mb-2.5">Tez qo'shish</p>
         <div className="flex flex-wrap gap-2">
           {PRESET_AMENITIES.map((p) => {
             const exists = amenities.some((a) => a.name === p.name);
@@ -88,10 +88,10 @@ export default function AmenitiesTab({ field, onUpdated }: Props) {
                 type="button"
                 onClick={() => handlePreset(p)}
                 disabled={exists || adding}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
                   exists
-                    ? 'bg-green-50 border-green-200 text-green-600 cursor-default'
-                    : 'border-gray-200 text-gray-600 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 cursor-default'
+                    : 'border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700'
                 }`}
               >
                 {p.icon} {p.name}
@@ -109,7 +109,7 @@ export default function AmenitiesTab({ field, onUpdated }: Props) {
           value={icon}
           onChange={(e) => setIcon(e.target.value)}
           placeholder="🏆"
-          className="w-16 px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-center focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+          className="w-16 px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-center focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
           maxLength={4}
         />
         <input
@@ -117,41 +117,42 @@ export default function AmenitiesTab({ field, onUpdated }: Props) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Qulaylik nomi..."
-          className="flex-1 px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+          className="flex-1 px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
         />
         <button
           type="submit"
           disabled={adding}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors disabled:opacity-60"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors disabled:opacity-60"
         >
-          {adding ? <LoadingSpinner size={15} /> : <Plus size={15} />}
+          {adding ? <LoadingSpinner size={16} /> : <Plus size={16} />}
           Qo'shish
         </button>
       </form>
 
       {/* Amenities list */}
       {amenities.length === 0 ? (
-        <div className="text-center py-10 text-gray-400">
-          <Star size={36} className="mx-auto mb-2 opacity-30" />
-          <p className="text-sm">Hali qulayliklar qo'shilmagan</p>
+        <div className="text-center py-12 text-gray-400">
+          <Star size={40} className="mx-auto mb-3 opacity-20" />
+          <p className="text-sm font-medium">Hali qulayliklar qo'shilmagan</p>
+          <p className="text-xs mt-1">Yuqoridan qulaylik qo'shing</p>
         </div>
       ) : (
         <div className="space-y-2">
           {amenities.map((a) => (
             <div
               key={a.id}
-              className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100"
+              className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <span className="text-xl">{a.icon}</span>
-                <span className="text-sm font-medium text-gray-700">{a.name}</span>
+                <span className="text-2xl">{a.icon}</span>
+                <span className="text-sm font-medium text-gray-800">{a.name}</span>
               </div>
               <button
                 onClick={() => handleDelete(a.id)}
                 disabled={deletingId === a.id}
-                className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors"
+                className="p-1.5 rounded-md text-red-500 hover:bg-red-50 transition-colors"
               >
-                {deletingId === a.id ? <LoadingSpinner size={14} /> : <Trash2 size={14} />}
+                {deletingId === a.id ? <LoadingSpinner size={16} /> : <Trash2 size={16} />}
               </button>
             </div>
           ))}

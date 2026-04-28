@@ -1,13 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, ChevronDown } from 'lucide-react';
+import { Menu, Bell, ChevronDown, Download } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { timeAgo } from '../../utils';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../context/ToastContext';
 
 interface Props {
   title: string;
   onMenuClick: () => void;
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
 export default function Header({ title, onMenuClick }: Props) {
@@ -15,9 +21,11 @@ export default function Header({ title, onMenuClick }: Props) {
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const notifsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -28,9 +36,34 @@ export default function Header({ title, onMenuClick }: Props) {
         setShowProfile(false);
       }
     };
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log('[PWA] BeforeInstallPromptEvent fired');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      document.removeEventListener('mousedown', handler);
+    };
   }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      showToast('Ilova allaqachon o\'rnatilgan yoki brauzer PWA ni qo\'llab-quvvatlamaydi', 'info');
+      return;
+    }
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`[PWA] User response to the install prompt: ${outcome}`);
+    
+    setDeferredPrompt(null);
+  };
 
   const handleNotifClick = async (notif: typeof notifications[0]) => {
     await markRead(notif.id);
@@ -55,6 +88,18 @@ export default function Header({ title, onMenuClick }: Props) {
 
       {/* Right: notifications + profile */}
       <div className="flex items-center gap-2">
+        {/* PWA Install Button */}
+        {deferredPrompt && (
+          <button
+            onClick={handleInstallClick}
+            className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center gap-2"
+            title="Ilovani o'rnatish"
+          >
+            <Download size={20} />
+            <span className="hidden sm:inline text-xs font-medium">O'rnatish</span>
+          </button>
+        )}
+
         {/* Notifications */}
         <div className="relative" ref={notifsRef}>
           <button

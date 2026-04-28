@@ -1,70 +1,94 @@
 /* ============================================================
    GoBron Admin — Service Worker
-   Versiya: 2.0.0
+   Versiya: 2.1.0
    Imkoniyatlar:
-     - Offline cache (Cache-First strategiyasi)
+     - Offline cache (Network-First strategiyasi)
      - Web Push bildirishnomalari
-     - Bildirishnomaga bosilganda sahifaga yo'naltirish
+     - localStorage himoyasi
    ============================================================ */
 
-const CACHE_NAME = 'gobron-admin-v2';
+const CACHE_NAME = 'gobron-admin-v2.1';
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.json'];
 
 // ─── Install ──────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
+  console.log('[SW] Installing service worker...');
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting()) // yangi SW darhol faollashadi
+      .then((cache) => {
+        console.log('[SW] Caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => {
+        console.log('[SW] Skip waiting');
+        return self.skipWaiting();
+      })
   );
 });
 
 // ─── Activate ─────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating service worker...');
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
-        // Eski cache versiyalarini o'chirish
-        Promise.all(
+      .then((keys) => {
+        console.log('[SW] Cleaning old caches');
+        return Promise.all(
           keys
             .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key))
-        )
-      )
-      .then(() => self.clients.claim()) // barcha tablarni boshqarish
+            .map((key) => {
+              console.log('[SW] Deleting cache:', key);
+              return caches.delete(key);
+            })
+        );
+      })
+      .then(() => {
+        console.log('[SW] Claiming clients');
+        return self.clients.claim();
+      })
   );
 });
 
-// ─── Fetch (Cache-First, fallback to network) ─────────────────
+// ─── Fetch (Network-First, fallback to cache) ─────────────────
 self.addEventListener('fetch', (event) => {
   // Faqat GET so'rovlarini cache qilamiz
   if (event.request.method !== 'GET') return;
 
-  // API so'rovlarini cache qilmaymiz
-  if (event.request.url.includes('/api/')) return;
+  // API so'rovlarini cache qilmaymiz - to'g'ridan-to'g'ri network
+  if (event.request.url.includes('/api/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
+  // Network-First strategiya (localStorage uchun xavfsiz)
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(event.request)
-        .then((response) => {
-          // Muvaffaqiyatli javobni cache ga saqlaymiz
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+    fetch(event.request)
+      .then((response) => {
+        // Muvaffaqiyatli javobni cache ga saqlaymiz
+        if (response && response.status === 200 && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // Network ishlamasa, cache'dan olamiz
+        return caches.match(event.request).then((cached) => {
+          if (cached) {
+            return cached;
           }
-          return response;
-        })
-        .catch(() => {
-          // Offline: HTML so'rovlari uchun index.html qaytaramiz
+          // HTML so'rovlari uchun index.html qaytaramiz
           if (event.request.headers.get('accept')?.includes('text/html')) {
             return caches.match('/index.html');
           }
+          // Boshqa resurslar uchun xatolik
+          return new Response('Offline', { status: 503 });
         });
-    })
+      })
   );
 });
 

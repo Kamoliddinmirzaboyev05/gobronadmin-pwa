@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Settings2, Image as ImageIcon, Star, MapPin, Upload, X } from 'lucide-react';
+import { Settings2, Image as ImageIcon, Star, Upload } from 'lucide-react';
 import type { Field } from '../../types';
 import { fieldsApi } from '../../api';
 import { CITIES, generateTimeSlots } from '../../utils';

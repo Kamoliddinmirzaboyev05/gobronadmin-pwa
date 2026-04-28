@@ -94,54 +94,58 @@ export default function Settings() {
   const selectedField = fields.find((f) => f.id === selectedFieldId) || null;
 
   return (
-    <div className="pb-4">
+    <div className="pb-4 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="px-4 pt-12 pb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-800">Sozlamalar</h1>
-          <p className="text-xs text-gray-400">Maydon sozlamalari</p>
+          <h1 className="text-2xl font-bold text-gray-900">Sozlamalar</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Maydon sozlamalari</p>
         </div>
         <button
           onClick={handleCreate}
           disabled={creating}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 text-white text-xs font-semibold active:bg-emerald-600 disabled:opacity-60 transition-colors shadow-sm"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-semibold active:bg-emerald-600 disabled:opacity-60 transition-colors shadow-sm"
         >
-          {creating ? <LoadingSpinner size={14} /> : <Plus size={14} />}
+          {creating ? <LoadingSpinner size={16} /> : <Plus size={16} />}
           Yangi
         </button>
       </div>
 
       {/* Field selector */}
-      <div className="px-4 mb-4">
-        <div className="card p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <MapPin size={14} className="text-emerald-500" />
-            <p className="text-xs font-semibold text-gray-600">Maydon tanlash</p>
+      <div className="px-4 mb-3">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <MapPin size={16} className="text-emerald-600" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700">Maydon tanlash</p>
           </div>
           {loading ? (
-            <LoadingSpinner size={20} className="text-emerald-500" />
+            <div className="flex justify-center py-4">
+              <LoadingSpinner size={24} className="text-emerald-500" />
+            </div>
           ) : fields.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-4">
-              <p className="text-sm text-gray-400">Maydonlar mavjud emas</p>
+            <div className="flex flex-col items-center gap-3 py-6">
+              <p className="text-sm text-gray-500">Maydonlar mavjud emas</p>
               <button
                 onClick={handleCreate}
                 disabled={creating}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 text-white text-xs font-semibold active:bg-emerald-600 disabled:opacity-60"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-semibold active:bg-emerald-600 disabled:opacity-60"
               >
-                {creating ? <LoadingSpinner size={14} /> : <Plus size={14} />}
+                {creating ? <LoadingSpinner size={16} /> : <Plus size={16} />}
                 Maydon yaratish
               </button>
             </div>
           ) : (
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar items-center">
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar items-center pb-1">
               {fields.map((f) => (
                 <div key={f.id} className="relative group shrink-0">
                   <button
                     onClick={() => setSelectedFieldId(f.id)}
-                    className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       selectedFieldId === f.id
-                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200'
-                        : 'bg-gray-100 text-gray-600'
+                        ? 'bg-emerald-500 text-white shadow-md'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     {f.name}
@@ -149,9 +153,9 @@ export default function Settings() {
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDelete(f.id); }}
                     disabled={deletingId === f.id}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                   >
-                    {deletingId === f.id ? <LoadingSpinner size={10} /> : <Trash2 size={10} />}
+                    {deletingId === f.id ? <LoadingSpinner size={12} /> : <Trash2 size={12} />}
                   </button>
                 </div>
               ))}
@@ -161,18 +165,18 @@ export default function Settings() {
       </div>
 
       {/* Tabs */}
-      <div className="px-4 mb-4">
-        <div className="card p-1 flex gap-1">
+      <div className="px-4 mb-3">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-1 flex gap-1">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => handleTabChange(id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === id ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500'
+              className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 py-2.5 rounded-md text-xs font-semibold transition-all ${
+                activeTab === id ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              <Icon size={14} />
-              {label}
+              <Icon size={16} />
+              <span className="hidden sm:inline">{label}</span>
             </button>
           ))}
         </div>
@@ -180,7 +184,7 @@ export default function Settings() {
 
       {/* Tab content */}
       <div className="px-4">
-        <div className="card p-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
           {activeTab === 'field' && (
             <FieldSettingsTab field={selectedField} onSaved={load} onDirty={setHasUnsaved} />
           )}
@@ -191,15 +195,15 @@ export default function Settings() {
             <AmenitiesTab field={selectedField} onUpdated={load} />
           )}
           {activeTab === 'notifications' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">Push-bildirishnomalar</h2>
-                <p className="text-sm text-gray-500 mt-1">Brauzer orqali to'liq PWA bildirishnomalari</p>
+                <h2 className="text-lg font-bold text-gray-900">Push-bildirishnomalar</h2>
+                <p className="text-sm text-gray-600 mt-1">Brauzer orqali to'liq PWA bildirishnomalari</p>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+              <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-100">
                 <div>
-                  <p className="text-sm font-medium text-emerald-900">Bildirishnomalar holati</p>
+                  <p className="text-sm font-semibold text-emerald-900">Bildirishnomalar holati</p>
                   <p className="text-xs text-emerald-700 mt-1">
                     {selectedField ? 'Admin panelida yangi bronlar haqida xabar' : 'Maydon tanlang'}
                   </p>
@@ -207,10 +211,10 @@ export default function Settings() {
                 <NotificationStatusBadge />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Obuna bo'lish</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm font-semibold text-gray-800">Obuna bo'lish</p>
+                  <p className="text-xs text-gray-600 mt-1">
                     Push-bildirishnomalarni yoqish
                   </p>
                 </div>
@@ -218,14 +222,14 @@ export default function Settings() {
               </div>
 
               <div className="pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400 leading-relaxed">
+                <p className="text-xs text-gray-500 leading-relaxed">
                   Push-bildirishnomalar orqali siz yangi bronlar, ularning holati o'zgarishi va boshqa muhim voqealar haqida darhol xabar olasiz. Bildirishnomalar brauzer yopiq bo'lgan holatda ham keladi.
                 </p>
               </div>
             </div>
           )}
           {(activeTab === 'images' || activeTab === 'amenities') && !selectedField && !loading && (
-            <div className="text-center py-10 text-gray-400 text-sm">Maydon tanlanmagan</div>
+            <div className="text-center py-12 text-gray-400 text-sm">Maydon tanlanmagan</div>
           )}
         </div>
       </div>
