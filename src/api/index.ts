@@ -44,7 +44,14 @@ function paginate<T>(items: T[], page = 1, pageSize = 20): PaginatedResponse<T> 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 if (!API_BASE_URL) {
-  throw new Error('VITE_API_URL environment variable is not defined. Please check your .env file.');
+  throw new Error(
+    'VITE_API_URL environment variable is not defined. ' +
+    'Please create a .env file with VITE_API_URL=http://103.6.169.242/api'
+  );
+}
+
+if (import.meta.env.DEV) {
+  console.log('[API] Using API Base URL:', API_BASE_URL);
 }
 
 // Token'ni saqlash (faqat localStorage)

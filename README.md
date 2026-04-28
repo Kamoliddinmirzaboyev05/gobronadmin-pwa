@@ -38,11 +38,13 @@ npm install
 cp .env.example .env
 ```
 
-4. Update `.env` with your API URL:
+4. The project is configured to use production API:
 ```env
 VITE_API_URL=http://103.6.169.242/api
 VITE_ENV=development
 ```
+
+**Note:** This project uses the production API (http://103.6.169.242/api) for all environments. No localhost setup required.
 
 5. Start development server:
 ```bash
