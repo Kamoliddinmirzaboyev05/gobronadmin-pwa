@@ -41,7 +41,11 @@ function paginate<T>(items: T[], page = 1, pageSize = 20): PaginatedResponse<T> 
   };
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://103.6.169.242/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_URL environment variable is not defined. Please check your .env file.');
+}
 
 // Token'ni saqlash (faqat localStorage)
 function saveToken(key: string, value: string) {
