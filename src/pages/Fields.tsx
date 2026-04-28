@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit2, Trash2, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, ToggleLeft, ToggleRight, Copy } from 'lucide-react';
 import { fieldsApi } from '../api';
 import type { Field } from '../types';
 import { formatCurrency } from '../utils';
@@ -14,6 +14,7 @@ export default function Fields() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editField, setEditField] = useState<Field | null>(null);
+  const [duplicateField, setDuplicateField] = useState<Field | null>(null);
   const [deleteField, setDeleteField] = useState<Field | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const { showToast } = useToast();
@@ -55,6 +56,13 @@ export default function Fields() {
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  const handleDuplicate = (field: Field) => {
+    setDuplicateField(field);
+    setEditField(null);
+    setShowForm(true);
+    showToast('Ma\'lumotlar ko\'chirildi. Narx va rasmlarni o\'zgartiring', 'info');
   };
 
   return (
@@ -147,19 +155,24 @@ export default function Fields() {
                 {/* Actions */}
                 <div className="flex gap-2 pt-3 border-t border-gray-50">
                   <button
-                    onClick={() => { setEditField(field); setShowForm(true); }}
+                    onClick={() => { setEditField(field); setDuplicateField(null); setShowForm(true); }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-xs font-semibold active:bg-gray-50"
                   >
                     <Edit2 size={13} /> Tahrirlash
                   </button>
                   <button
+                    onClick={() => handleDuplicate(field)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-blue-200 text-blue-600 text-xs font-semibold active:bg-blue-50"
+                  >
+                    <Copy size={13} /> Nusxa
+                  </button>
+                  <button
                     onClick={() => handleToggle(field)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold ${
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-semibold ${
                       field.is_active ? 'border border-orange-200 text-orange-500' : 'border border-emerald-200 text-emerald-600'
                     }`}
                   >
-                    {field.is_active ? <ToggleRight size={13} /> : <ToggleLeft size={13} />}
-                    {field.is_active ? 'Nofaol' : 'Faollashtirish'}
+                    {field.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
                   </button>
                   <button
                     onClick={() => setDeleteField(field)}
@@ -177,13 +190,14 @@ export default function Fields() {
       {/* Field Form BottomSheet */}
       <BottomSheet
         isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditField(null); }}
-        title={editField ? 'Maydonni tahrirlash' : 'Yangi maydon'}
+        onClose={() => { setShowForm(false); setEditField(null); setDuplicateField(null); }}
+        title={editField ? 'Maydonni tahrirlash' : duplicateField ? 'Nusxa yaratish' : 'Yangi maydon'}
       >
         <FieldForm
           field={editField}
-          onSaved={() => { setShowForm(false); setEditField(null); load(); }}
-          onCancel={() => { setShowForm(false); setEditField(null); }}
+          duplicateFrom={duplicateField}
+          onSaved={() => { setShowForm(false); setEditField(null); setDuplicateField(null); load(); }}
+          onCancel={() => { setShowForm(false); setEditField(null); setDuplicateField(null); }}
         />
       </BottomSheet>
 

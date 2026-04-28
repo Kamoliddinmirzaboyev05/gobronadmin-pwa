@@ -354,8 +354,8 @@ export default function Dashboard() {
                   <div className="flex items-start gap-3">
                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
                       b.status === 'pending' 
-                        ? 'bg-gradient-to-br from-amber-400 to-amber-600' 
-                        : 'bg-gradient-to-br from-emerald-400 to-emerald-600'
+                        ? 'bg-linear-to-br from-amber-400 to-amber-600' 
+                        : 'bg-linear-to-br from-emerald-400 to-emerald-600'
                     }`}>
                       <span className="text-sm font-bold text-white">
                         {b.client_name?.charAt(0)?.toUpperCase() || '?'}
