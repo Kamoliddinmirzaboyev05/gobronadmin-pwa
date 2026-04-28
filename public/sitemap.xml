@@ -6,7 +6,7 @@
   
   <!-- Homepage -->
   <url>
-    <loc>https://gobronadmin.vercel.app/</loc>
+    <loc>https://gobronadmin.webportfolio.uz/</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -14,7 +14,7 @@
   
   <!-- Login Page -->
   <url>
-    <loc>https://gobronadmin.vercel.app/login</loc>
+    <loc>https://gobronadmin.webportfolio.uz/login</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -22,7 +22,7 @@
   
   <!-- Register Page -->
   <url>
-    <loc>https://gobronadmin.vercel.app/register</loc>
+    <loc>https://gobronadmin.webportfolio.uz/register</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -30,7 +30,7 @@
   
   <!-- Dashboard -->
   <url>
-    <loc>https://gobronadmin.vercel.app/dashboard</loc>
+    <loc>https://gobronadmin.webportfolio.uz/dashboard</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -38,7 +38,7 @@
   
   <!-- Bookings -->
   <url>
-    <loc>https://gobronadmin.vercel.app/bookings</loc>
+    <loc>https://gobronadmin.webportfolio.uz/bookings</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -46,7 +46,7 @@
   
   <!-- Fields -->
   <url>
-    <loc>https://gobronadmin.vercel.app/fields</loc>
+    <loc>https://gobronadmin.webportfolio.uz/fields</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -54,7 +54,7 @@
   
   <!-- Settings -->
   <url>
-    <loc>https://gobronadmin.vercel.app/settings</loc>
+    <loc>https://gobronadmin.webportfolio.uz/settings</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -62,7 +62,7 @@
   
   <!-- Profile -->
   <url>
-    <loc>https://gobronadmin.vercel.app/profile</loc>
+    <loc>https://gobronadmin.webportfolio.uz/profile</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

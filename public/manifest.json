@@ -5,13 +5,16 @@
   "theme_color": "#10b981",
   "background_color": "#ffffff",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
   "scope": "/",
-  "start_url": "/",
-  "id": "/",
+  "start_url": "/?source=pwa",
+  "id": "uz.gobron.admin",
   "lang": "uz",
   "dir": "ltr",
   "categories": ["business", "productivity", "sports"],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-72.png",
@@ -102,12 +105,13 @@
       "name": "Dashboard",
       "short_name": "Asosiy",
       "description": "Asosiy sahifaga o'tish",
-      "url": "/",
+      "url": "/dashboard?source=shortcut",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png",
+          "purpose": "any"
         }
       ]
     },
@@ -115,12 +119,13 @@
       "name": "Bandliklar",
       "short_name": "Bandliklar",
       "description": "Bandliklar ro'yxatini ko'rish",
-      "url": "/bookings",
+      "url": "/bookings?source=shortcut",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png",
+          "purpose": "any"
         }
       ]
     },
@@ -128,23 +133,69 @@
       "name": "Maydonlar",
       "short_name": "Maydonlar",
       "description": "Maydonlar ro'yxatini ko'rish",
-      "url": "/fields",
+      "url": "/fields?source=shortcut",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png",
+          "purpose": "any"
+        }
+      ]
+    },
+    {
+      "name": "Yangi Bron",
+      "short_name": "Yangi",
+      "description": "Yangi bandlik yaratish",
+      "url": "/bookings?action=create",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png",
+          "purpose": "any"
         }
       ]
     }
   ],
   "share_target": {
     "action": "/share",
-    "method": "GET",
+    "method": "POST",
+    "enctype": "multipart/form-data",
     "params": {
       "title": "title",
       "text": "text",
-      "url": "url"
+      "url": "url",
+      "files": [
+        {
+          "name": "media",
+          "accept": ["image/*", "video/*"]
+        }
+      ]
     }
-  }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+gobron",
+      "url": "/booking?id=%s"
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "handle_links": "preferred",
+  "related_applications": [],
+  "file_handlers": [
+    {
+      "action": "/import",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/vnd.ms-excel": [".xls"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
+      }
+    }
+  ]
 }

@@ -354,7 +354,7 @@ export const fieldsApi = {
       phone: data.phone || '',
       advance_booking_days: data.advance_booking_days ?? 1,
     };
-    const res = await apiFetch<unknown>(`${API_BASE_URL}/admin/fields/`, {
+    const res = await apiFetch<unknown>(`${API_BASE_URL}/fields/my-fields/create/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

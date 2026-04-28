@@ -10,24 +10,29 @@ import AmenitiesTab from '../settings/AmenitiesTab';
 
 interface Props {
   field: Field | null;
+  duplicateFrom?: Field | null;
   onSaved: () => void;
   onCancel: () => void;
 }
 
-export default function FieldForm({ field, onSaved, onCancel }: Props) {
+export default function FieldForm({ field, duplicateFrom, onSaved, onCancel }: Props) {
   const [activeTab, setActiveTab] = useState<'basic' | 'images' | 'amenities'>('basic');
+  
+  // Agar duplicateFrom bo'lsa, uning ma'lumotlarini ishlatamiz
+  const sourceField = duplicateFrom || field;
+  
   const [form, setForm] = useState({
-    name: field?.name || '',
-    description: field?.description || '',
-    address: field?.address || '',
-    city: field?.city || 'Toshkent',
-    price_per_hour: field?.price_per_hour || 0,
-    opening_time: field?.opening_time || '08:00',
-    closing_time: field?.closing_time || '22:00',
-    is_active: field?.is_active ?? true,
-    phone: field?.phone || '',
-    location_url: field?.location_url || '',
-    advance_booking_days: field?.advance_booking_days || 1,
+    name: sourceField?.name ? `${sourceField.name} (nusxa)` : '',
+    description: sourceField?.description || '',
+    address: sourceField?.address || '',
+    city: sourceField?.city || 'Toshkent',
+    price_per_hour: sourceField?.price_per_hour || 0,
+    opening_time: sourceField?.opening_time || '08:00',
+    closing_time: sourceField?.closing_time || '22:00',
+    is_active: sourceField?.is_active ?? true,
+    phone: sourceField?.phone || '',
+    location_url: sourceField?.location_url || '',
+    advance_booking_days: sourceField?.advance_booking_days || 1,
   });
   const [loading, setLoading] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -82,6 +87,24 @@ export default function FieldForm({ field, onSaved, onCancel }: Props) {
 
   const renderBasicTab = () => (
     <div className="space-y-4">
+      {/* Duplicate Info Banner */}
+      {duplicateFrom && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-blue-500 flex items-center justify-center shrink-0">
+              <span className="text-white text-lg">📋</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-800 mb-1">Nusxa yaratilmoqda</p>
+              <p className="text-xs text-blue-600 leading-relaxed">
+                "{duplicateFrom.name}" dan barcha ma'lumotlar ko'chirildi. 
+                Narx, rasmlar va qulayliklarni o'zgartirishingiz mumkin.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cover Image Section (only for existing fields) */}
       {field && (
         <div className="relative h-40 w-full rounded-2xl overflow-hidden bg-gray-100 group border border-gray-100">
@@ -196,8 +219,14 @@ export default function FieldForm({ field, onSaved, onCancel }: Props) {
             value={form.price_per_hour}
             onChange={(e) => setForm({ ...form, price_per_hour: Number(e.target.value) })}
             min={0} step={1000}
-            className="w-full px-3 py-3 rounded-2xl bg-gray-50 border border-gray-100 text-sm"
+            className={`w-full px-3 py-3 rounded-2xl bg-gray-50 border text-sm ${
+              duplicateFrom ? 'border-blue-300 ring-2 ring-blue-100' : 'border-gray-100'
+            }`}
+            placeholder="Masalan: 100000"
           />
+          {duplicateFrom && (
+            <p className="text-xs text-blue-600 mt-1">💡 Narxni o'zgartiring</p>
+          )}
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Oldindan band qilish (kun)</label>
@@ -292,6 +321,18 @@ export default function FieldForm({ field, onSaved, onCancel }: Props) {
         </div>
       )}
 
+      {/* Info banner for duplicate - show reminder about images and amenities */}
+      {duplicateFrom && !field && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-3">
+          <p className="text-xs text-amber-800 font-medium mb-2">📝 Eslatma:</p>
+          <ul className="text-xs text-amber-700 space-y-1 pl-4">
+            <li>• Maydon yaratilgandan keyin rasmlar qo'shing</li>
+            <li>• Qulayliklarni tahrirlang</li>
+            <li>• Narxni tekshiring</li>
+          </ul>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto hide-scrollbar">
         {activeTab === 'basic' ? (
           <form id="field-form" onSubmit={handleSubmit}>
@@ -319,7 +360,7 @@ export default function FieldForm({ field, onSaved, onCancel }: Props) {
               className="w-full py-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-emerald-200 active:scale-[0.98] transition-all"
             >
               {loading && <LoadingSpinner size={16} />}
-              {field ? 'O\'zgarishlarni saqlash' : 'Yangi maydon yaratish'}
+              {field ? 'O\'zgarishlarni saqlash' : duplicateFrom ? 'Nusxa yaratish' : 'Yangi maydon yaratish'}
             </button>
             <button type="button" onClick={onCancel}
               className="w-full py-4 rounded-2xl bg-gray-100 text-gray-500 font-semibold text-sm active:bg-gray-200 transition-colors">

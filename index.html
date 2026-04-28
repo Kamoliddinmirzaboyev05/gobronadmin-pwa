@@ -33,21 +33,47 @@
     <meta property="twitter:image" content="https://gobronadmin.vercel.app/og-image.png" />
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#10b981" />
+    <meta name="theme-color" content="#10b981" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#059669" media="(prefers-color-scheme: dark)" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="GoBron Admin" />
+    <meta name="application-name" content="GoBron Admin" />
+    <meta name="msapplication-TileColor" content="#10b981" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="color-scheme" content="light dark" />
     
     <!-- Canonical URL -->
     <link rel="canonical" href="https://gobronadmin.vercel.app/" />
     
     <!-- Favicon & Icons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icon-180.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icon-167.png" />
+    
+    <!-- Apple Splash Screens -->
+    <link rel="apple-touch-startup-image" href="/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash-1536x2048.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
     
     <!-- Preconnect to API -->
     <link rel="preconnect" href="https://gobronapi.webportfolio.uz" />
@@ -84,14 +110,115 @@
     </script>
   </head>
   <body>
+    <!-- Noscript fallback -->
+    <noscript>
+      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: system-ui; text-align: center; padding: 20px;">
+        <div>
+          <h1 style="color: #10b981; margin-bottom: 16px;">⚽ GoBron Admin</h1>
+          <p style="color: #64748b;">JavaScript yoqilmagan. Iltimos, brauzer sozlamalarida JavaScript'ni yoqing.</p>
+        </div>
+      </div>
+    </noscript>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration - Modern Approach -->
     <script>
+      // Service Worker registration with update handling
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        let refreshing = false;
+        
+        // Detect controller change and refresh
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+        
+        window.addEventListener('load', async () => {
+          try {
+            const registration = await navigator.serviceWorker.register('/sw.js', {
+              scope: '/',
+              updateViaCache: 'none'
+            });
+            
+            console.log('[PWA] Service Worker registered:', registration.scope);
+            
+            // Check for updates every hour
+            setInterval(() => {
+              registration.update();
+            }, 60 * 60 * 1000);
+            
+            // Listen for waiting service worker
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (!newWorker) return;
+              
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New service worker available
+                  console.log('[PWA] New version available');
+                  
+                  // Dispatch custom event for UI to show update prompt
+                  window.dispatchEvent(new CustomEvent('pwa-update-available', {
+                    detail: { registration }
+                  }));
+                }
+              });
+            });
+          } catch (error) {
+            console.error('[PWA] Service Worker registration failed:', error);
+          }
         });
       }
+      
+      // Install prompt handling
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('[PWA] Install prompt available');
+        
+        // Dispatch custom event for UI
+        window.dispatchEvent(new CustomEvent('pwa-installable', {
+          detail: { prompt: deferredPrompt }
+        }));
+      });
+      
+      window.addEventListener('appinstalled', () => {
+        console.log('[PWA] App installed successfully');
+        deferredPrompt = null;
+        
+        // Track installation
+        if (window.gtag) {
+          gtag('event', 'pwa_install', {
+            event_category: 'engagement',
+            event_label: 'PWA Installed'
+          });
+        }
+      });
+      
+      // Detect if running as PWA
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                    window.navigator.standalone === true ||
+                    document.referrer.includes('android-app://');
+      
+      if (isPWA) {
+        console.log('[PWA] Running as installed app');
+        document.documentElement.classList.add('pwa-mode');
+      }
+      
+      // Handle offline/online events
+      window.addEventListener('online', () => {
+        console.log('[PWA] Back online');
+        window.dispatchEvent(new CustomEvent('pwa-online'));
+      });
+      
+      window.addEventListener('offline', () => {
+        console.log('[PWA] Gone offline');
+        window.dispatchEvent(new CustomEvent('pwa-offline'));
+      });
     </script>
   </body>
 </html>
