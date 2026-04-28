@@ -22,6 +22,10 @@ export default function Header({ title, onMenuClick }: Props) {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    // Check if app is already installed on mount
+    return window.matchMedia('(display-mode: standalone)').matches;
+  });
   const notifsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -37,30 +41,48 @@ export default function Header({ title, onMenuClick }: Props) {
       }
     };
 
-    const handleBeforeInstallPrompt = (e: any) => {
+    const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       console.log('[PWA] BeforeInstallPromptEvent fired');
     };
 
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      showToast('Ilova muvaffaqiyatli o\'rnatildi!', 'success');
+      console.log('[PWA] App installed successfully');
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
     document.addEventListener('mousedown', handler);
     
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
       document.removeEventListener('mousedown', handler);
     };
-  }, []);
+  }, [showToast]);
 
   const handleInstallClick = async () => {
+    if (isInstalled) {
+      showToast('Ilova allaqachon o\'rnatilgan', 'info');
+      return;
+    }
+
     if (!deferredPrompt) {
-      showToast('Ilova allaqachon o\'rnatilgan yoki brauzer PWA ni qo\'llab-quvvatlamaydi', 'info');
+      showToast('Brauzer PWA o\'rnatishni qo\'llab-quvvatlamaydi', 'warning');
       return;
     }
     
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     console.log(`[PWA] User response to the install prompt: ${outcome}`);
+    
+    if (outcome === 'accepted') {
+      showToast('Ilova o\'rnatilmoqda...', 'info');
+    }
     
     setDeferredPrompt(null);
   };
@@ -88,17 +110,23 @@ export default function Header({ title, onMenuClick }: Props) {
 
       {/* Right: notifications + profile */}
       <div className="flex items-center gap-2">
-        {/* PWA Install Button */}
-        {deferredPrompt && (
-          <button
-            onClick={handleInstallClick}
-            className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center gap-2"
-            title="Ilovani o'rnatish"
-          >
-            <Download size={20} />
-            <span className="hidden sm:inline text-xs font-medium">O'rnatish</span>
-          </button>
-        )}
+        {/* PWA Install Button - Always visible */}
+        <button
+          onClick={handleInstallClick}
+          className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${
+            isInstalled 
+              ? 'text-gray-400 cursor-default' 
+              : deferredPrompt 
+                ? 'text-emerald-600 hover:bg-emerald-50 animate-pulse' 
+                : 'text-gray-500 hover:bg-gray-100'
+          }`}
+          title={isInstalled ? 'Ilova o\'rnatilgan' : 'Ilovani o\'rnatish'}
+        >
+          <Download size={20} />
+          <span className="hidden sm:inline text-xs font-medium">
+            {isInstalled ? 'O\'rnatilgan' : 'O\'rnatish'}
+          </span>
+        </button>
 
         {/* Notifications */}
         <div className="relative" ref={notifsRef}>
@@ -143,7 +171,7 @@ export default function Header({ title, onMenuClick }: Props) {
                     >
                       <div className="flex items-start gap-2">
                         {!notif.is_read && (
-                          <span className="w-2 h-2 rounded-full bg-orange-500 mt-1.5 flex-shrink-0" />
+                          <span className="w-2 h-2 rounded-full bg-orange-500 mt-1.5 shrink-0" />
                         )}
                         <div className={!notif.is_read ? '' : 'pl-4'}>
                           <p className="text-sm text-gray-700 leading-snug">{notif.message}</p>

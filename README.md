@@ -120,6 +120,36 @@ src/
 - Set pricing and working hours
 - View available slots
 
+## Deployment
+
+### Vercel Deployment
+
+This project is configured for easy deployment on Vercel:
+
+1. Push your code to GitHub
+2. Import project in Vercel dashboard
+3. Configure environment variables:
+   - `VITE_API_URL=https://gobronapi.webportfolio.uz/api`
+   - `VITE_ENV=production`
+4. Deploy!
+
+The `vercel.json` configuration ensures:
+- SPA routing works correctly (no 404 on page refresh)
+- Proper caching for static assets
+- Security headers
+
+### Manual Deployment
+
+```bash
+# Build for production
+npm run build
+
+# Preview production build locally
+npm run preview
+
+# Deploy dist folder to your hosting
+```
+
 ## Available Scripts
 
 - `npm run dev` - Start development server
